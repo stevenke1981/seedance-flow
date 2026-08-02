@@ -11,7 +11,11 @@ import {
 } from './prompt-engine.mjs';
 
 const HISTORY_KEY = 'seedance-flow-history-v1';
-const STATUS_LABELS = { queued: '排隊中', running: '生成中', succeeded: '已完成', failed: '失敗', expired: '已過期', cancelled: '已取消' };
+const STATUS_LABELS = { queued: '排隊中', running: '生成中', cancelling: '取消中', succeeded: '已完成', failed: '失敗', expired: '已過期', cancelled: '已取消' };
+const MAX_HISTORY = 40;
+const POLL_INTERVAL_MS = 5000;
+const MAX_POLL_MS = 15 * 60 * 1000;
+const MAX_POLL_RETRIES = 3;
 
 const $ = (selector) => document.querySelector(selector);
 const canvas = $('#canvas');
@@ -40,6 +44,8 @@ let dragState = null;
 let saveTimer;
 let apiConfig = { apiKey: '', model: '' };
 let history = loadHistory();
+const pollTimers = new Map();
+const submitting = new Set();
 
 function loadWorkflow() {
   try {
@@ -55,14 +61,42 @@ function loadHistory() {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((entry) => entry && typeof entry.id === 'string') : [];
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY).map(normalizeHistoryEntry).filter(Boolean) : [];
   } catch {
     return [];
   }
 }
 
+function normalizeHistoryEntry(entry) {
+  if (!entry || typeof entry !== 'object' || typeof entry.id !== 'string' || entry.id.length > 160) return null;
+  const status = ['queued', 'running', 'cancelling', 'succeeded', 'failed', 'expired', 'cancelled'].includes(entry.status) ? entry.status : 'failed';
+  return {
+    id: entry.id,
+    version: typeof entry.version === 'string' ? entry.version.slice(0, 32) : 'v???',
+    prompt: typeof entry.prompt === 'string' ? entry.prompt.slice(0, 10000) : '',
+    promptHash: typeof entry.promptHash === 'string' ? entry.promptHash.slice(0, 64) : '',
+    model: typeof entry.model === 'string' ? entry.model.slice(0, 200) : '',
+    ratio: typeof entry.ratio === 'string' ? entry.ratio.slice(0, 20) : '16:9',
+    duration: Number.isFinite(entry.duration) ? entry.duration : 30,
+    status,
+    taskId: typeof entry.taskId === 'string' ? entry.taskId.slice(0, 200) : '',
+    videoUrl: typeof entry.videoUrl === 'string' ? entry.videoUrl.slice(0, 2048) : '',
+    lastFrameUrl: typeof entry.lastFrameUrl === 'string' ? entry.lastFrameUrl.slice(0, 2048) : '',
+    errorMessage: typeof entry.errorMessage === 'string' ? entry.errorMessage.slice(0, 1000) : '',
+    errorCode: typeof entry.errorCode === 'string' ? entry.errorCode.slice(0, 120) : '',
+    requestId: typeof entry.requestId === 'string' ? entry.requestId.slice(0, 200) : '',
+    createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : new Date().toISOString(),
+    updatedAt: typeof entry.updatedAt === 'string' ? entry.updatedAt : '',
+    pollStartedAt: typeof entry.pollStartedAt === 'string' ? entry.pollStartedAt : '',
+    pollRetries: Number.isFinite(entry.pollRetries) ? Math.max(0, Math.min(MAX_POLL_RETRIES, entry.pollRetries)) : 0,
+    retryOf: typeof entry.retryOf === 'string' ? entry.retryOf.slice(0, 32) : '',
+    usage: entry.usage && typeof entry.usage === 'object' ? entry.usage : null,
+    workflow: entry.workflow && typeof entry.workflow === 'object' ? entry.workflow : null,
+  };
+}
+
 function persistHistory() {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 40))); } catch { announce('版本歷史無法寫入本機儲存。', 'error'); }
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY))); } catch { announce('版本歷史無法寫入本機儲存。', 'error'); }
 }
 
 function nextVersion() {
@@ -232,8 +266,9 @@ function renderHistory() {
   }
   history.forEach((entry) => {
     const card = document.createElement('article');
-    const statusClass = entry.status === 'failed' ? 'is-failed' : (entry.status === 'queued' || entry.status === 'running' ? 'is-running' : '');
+    const statusClass = entry.status === 'failed' ? 'is-failed' : (entry.status === 'queued' || entry.status === 'running' || entry.status === 'cancelling' ? 'is-running' : '');
     card.className = `history-item ${statusClass}`;
+    card.dataset.historyId = entry.id;
     const head = document.createElement('div');
     head.className = 'history-item-head';
     const version = document.createElement('span');
@@ -255,7 +290,7 @@ function renderHistory() {
     if (entry.errorMessage) {
       const error = document.createElement('div');
       error.className = 'history-time';
-      error.textContent = entry.errorMessage;
+      error.textContent = [entry.errorMessage, entry.errorCode && `code=${entry.errorCode}`, entry.requestId && `request=${entry.requestId}`].filter(Boolean).join(' · ');
       card.append(error);
     }
     if (entry.videoUrl && /^https?:\/\//i.test(entry.videoUrl)) {
@@ -277,6 +312,27 @@ function renderHistory() {
       links.append(link);
       card.append(links);
     }
+    const actions = document.createElement('div');
+    actions.className = 'history-actions';
+    if (['queued', 'running', 'cancelling'].includes(entry.status) && entry.taskId) {
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'button button-danger history-action';
+      cancel.dataset.cancelHistory = entry.id;
+      cancel.textContent = entry.status === 'cancelling' ? '取消中…' : '取消任務';
+      cancel.disabled = entry.status === 'cancelling';
+      actions.append(cancel);
+    }
+    if (['failed', 'succeeded', 'cancelled', 'expired'].includes(entry.status)) {
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'button button-quiet history-action';
+      retry.dataset.retryHistory = entry.id;
+      retry.textContent = entry.status === 'succeeded' ? '再次生成' : '重試生成';
+      retry.disabled = submitting.has(entry.id);
+      actions.append(retry);
+    }
+    if (actions.childElementCount) card.append(actions);
     versionHistory.append(card);
   });
 }
@@ -306,9 +362,9 @@ function clearApiConfig() {
   announce('已清除目前分頁的 API 設定。');
 }
 
-function generationSettings() {
-  const ratioText = workflow.nodes.find((node) => node.type === 'output')?.values?.ratio || workflow.ratio || '16:9';
-  const durationText = workflow.nodes.find((node) => node.type === 'output')?.values?.duration || workflow.duration || 30;
+function generationSettings(sourceWorkflow = workflow) {
+  const ratioText = sourceWorkflow.nodes.find((node) => node.type === 'output')?.values?.ratio || sourceWorkflow.ratio || '16:9';
+  const durationText = sourceWorkflow.nodes.find((node) => node.type === 'output')?.values?.duration || sourceWorkflow.duration || 30;
   return { ratio: ratioText.match(/\d+:\d+/)?.[0] || '16:9', duration: Number(String(durationText).match(/\d+/)?.[0] || 30) };
 }
 
@@ -318,12 +374,58 @@ function apiHeaders() {
 
 async function responseJson(response) {
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || `本機 API 回應 ${response.status}`);
+  if (!response.ok) {
+    const detail = typeof body.error === 'string' ? { message: body.error } : (body.error || {});
+    const error = new Error(detail.message || `本機 API 回應 ${response.status}`);
+    error.status = response.status;
+    error.code = detail.code || '';
+    error.requestId = detail.requestId || '';
+    error.retryable = detail.retryable === true || [408, 409, 425, 429].includes(response.status) || response.status >= 500;
+    throw error;
+  }
   return body;
 }
 
+function clearPoll(entry) {
+  const timer = pollTimers.get(entry.id);
+  if (timer) window.clearTimeout(timer);
+  pollTimers.delete(entry.id);
+}
+
+function schedulePoll(entry, delay = POLL_INTERVAL_MS) {
+  clearPoll(entry);
+  pollTimers.set(entry.id, window.setTimeout(() => {
+    pollTimers.delete(entry.id);
+    pollGeneration(entry);
+  }, delay));
+}
+
+function persistEntry(entry) {
+  const index = history.findIndex((item) => item.id === entry.id);
+  if (index >= 0) history[index] = entry;
+  persistHistory();
+  renderHistory();
+}
+
+function finishGeneration(entry, status, message = '') {
+  clearPoll(entry);
+  entry.status = status;
+  entry.errorMessage = message;
+  entry.updatedAt = new Date().toISOString();
+  persistEntry(entry);
+  const detail = message || STATUS_LABELS[status] || '任務已結束';
+  const suffix = /[。.!！?？]$/.test(detail) ? '' : '。';
+  announce(status === 'succeeded' ? `${entry.version} 影片已完成，可在版本歷史播放。` : `${entry.version} ${detail}${suffix}`, status === 'succeeded' ? 'success' : 'error');
+}
+
 async function pollGeneration(entry) {
-  if (!entry.taskId || !apiConfig.apiKey) return;
+  if (!entry.taskId || !apiConfig.apiKey || ['succeeded', 'failed', 'expired', 'cancelled'].includes(entry.status)) return;
+  const startedAt = Date.parse(entry.pollStartedAt || entry.createdAt || '') || Date.now();
+  if (!entry.pollStartedAt) entry.pollStartedAt = new Date(startedAt).toISOString();
+  if (Date.now() - startedAt > MAX_POLL_MS) {
+    finishGeneration(entry, 'expired', '輪詢超過 15 分鐘，已停止自動查詢。');
+    return;
+  }
   try {
     const response = await fetch(`/api/generations/${encodeURIComponent(entry.taskId)}`, { headers: apiHeaders() });
     const task = await responseJson(response);
@@ -331,34 +433,37 @@ async function pollGeneration(entry) {
     entry.videoUrl = task.videoUrl || entry.videoUrl || '';
     entry.lastFrameUrl = task.lastFrameUrl || entry.lastFrameUrl || '';
     entry.errorMessage = task.error?.message || '';
+    entry.errorCode = task.error?.code || '';
+    entry.requestId = task.requestId || entry.requestId || '';
     entry.updatedAt = new Date().toISOString();
     entry.usage = task.usage || entry.usage || null;
-    persistHistory();
-    renderHistory();
+    entry.pollRetries = 0;
+    persistEntry(entry);
     if (['succeeded', 'failed', 'expired', 'cancelled'].includes(entry.status)) {
-      announce(entry.status === 'succeeded' ? `${entry.version} 影片已完成，可在版本歷史播放。` : `${entry.version} 生成${STATUS_LABELS[entry.status] || '結束'}。`, entry.status === 'succeeded' ? 'success' : 'error');
+      finishGeneration(entry, entry.status, entry.errorMessage);
       return;
     }
-    window.setTimeout(() => pollGeneration(entry), 5000);
+    schedulePoll(entry);
   } catch (error) {
-    entry.status = 'failed';
-    entry.errorMessage = error.message || '查詢生成任務失敗。';
-    entry.updatedAt = new Date().toISOString();
-    persistHistory();
-    renderHistory();
-    announce(`${entry.version} 查詢失敗：${entry.errorMessage}`, 'error');
+    entry.errorCode = error.code || '';
+    entry.requestId = error.requestId || '';
+    entry.pollRetries = (entry.pollRetries || 0) + 1;
+    if (error.retryable && entry.pollRetries <= MAX_POLL_RETRIES && Date.now() - startedAt <= MAX_POLL_MS) {
+      const delay = Math.min(POLL_INTERVAL_MS * (2 ** (entry.pollRetries - 1)), 30_000);
+      entry.updatedAt = new Date().toISOString();
+      persistEntry(entry);
+      announce(`${entry.version} 查詢暫時失敗，${Math.round(delay / 1000)} 秒後重試。`, 'error');
+      schedulePoll(entry, delay);
+      return;
+    }
+    finishGeneration(entry, 'failed', error.message || '查詢生成任務失敗。');
   }
 }
 
-async function generateVideo() {
-  if (!apiConfig.apiKey || !apiConfig.model) {
-    announce('請先開啟 API 設定，填入 Ark API Key 與模型／Endpoint ID。', 'error');
-    showApiModal();
-    return;
-  }
-  const prompt = promptOutput.textContent.trim();
-  const settings = generationSettings();
-  const entry = {
+function createGenerationEntry(workflowSnapshot, retryOf = '') {
+  const settings = generationSettings(workflowSnapshot);
+  const prompt = buildPrompt(workflowSnapshot.nodes, workflowSnapshot).trim();
+  return {
     id: globalThis.crypto?.randomUUID?.() || `local-${Date.now()}`,
     version: nextVersion(),
     prompt,
@@ -370,9 +475,31 @@ async function generateVideo() {
     taskId: '',
     videoUrl: '',
     errorMessage: '',
+    errorCode: '',
+    requestId: '',
     createdAt: new Date().toISOString(),
-    workflow: JSON.parse(JSON.stringify(workflow)),
+    updatedAt: '',
+    pollStartedAt: '',
+    pollRetries: 0,
+    retryOf,
+    workflow: JSON.parse(JSON.stringify(workflowSnapshot)),
   };
+}
+
+async function submitGeneration(workflowInput, retryOf = '') {
+  if (!apiConfig.apiKey || !apiConfig.model) {
+    announce('請先開啟 API 設定，填入 Ark API Key 與模型／Endpoint ID。', 'error');
+    showApiModal();
+    return;
+  }
+  if (retryOf && submitting.has(retryOf)) return;
+  let workflowSnapshot;
+  try { workflowSnapshot = parseWorkflow(workflowInput); } catch (error) {
+    announce(`無法提交工作流：${error.message}`, 'error');
+    return;
+  }
+  const entry = createGenerationEntry(workflowSnapshot, retryOf);
+  if (retryOf) submitting.add(retryOf);
   history.unshift(entry);
   persistHistory();
   renderHistory();
@@ -383,20 +510,60 @@ async function generateVideo() {
     const created = await responseJson(response);
     entry.taskId = created.id;
     entry.status = created.status || 'queued';
+    entry.pollStartedAt = new Date().toISOString();
     entry.updatedAt = new Date().toISOString();
-    persistHistory();
-    renderHistory();
-    window.setTimeout(() => pollGeneration(entry), 1000);
+    persistEntry(entry);
+    schedulePoll(entry, 1000);
   } catch (error) {
-    entry.status = 'failed';
-    entry.errorMessage = error.message || '無法送出 Seedance 任務。';
-    entry.updatedAt = new Date().toISOString();
-    persistHistory();
-    renderHistory();
-    announce(`${entry.version} 送出失敗：${entry.errorMessage}`, 'error');
+    entry.errorCode = error.code || '';
+    entry.requestId = error.requestId || '';
+    finishGeneration(entry, 'failed', error.message || '無法送出 Seedance 任務。');
   } finally {
+    if (retryOf) submitting.delete(retryOf);
     generateButton.disabled = false;
+    renderHistory();
   }
+}
+
+function generateVideo() {
+  submitGeneration(workflow);
+}
+
+async function cancelGeneration(entry) {
+  if (!entry.taskId || !apiConfig.apiKey) {
+    announce('取消任務需要目前分頁中的 Ark API Key。', 'error');
+    showApiModal();
+    return;
+  }
+  clearPoll(entry);
+  const previousStatus = entry.status;
+  entry.status = 'cancelling';
+  entry.updatedAt = new Date().toISOString();
+  persistEntry(entry);
+  try {
+    const response = await fetch(`/api/generations/${encodeURIComponent(entry.taskId)}`, { method: 'DELETE', headers: apiHeaders() });
+    const task = await responseJson(response);
+    entry.videoUrl = task.videoUrl || entry.videoUrl || '';
+    entry.lastFrameUrl = task.lastFrameUrl || entry.lastFrameUrl || '';
+    entry.usage = task.usage || entry.usage || null;
+    const finalStatus = ['succeeded', 'failed', 'expired', 'cancelled'].includes(task.status) ? task.status : 'cancelled';
+    finishGeneration(entry, finalStatus, task.error?.message || '已取消。');
+  } catch (error) {
+    entry.status = previousStatus;
+    entry.errorCode = error.code || '';
+    entry.requestId = error.requestId || '';
+    persistEntry(entry);
+    announce(`${entry.version} 取消失敗：${error.message || '請稍後重試。'}`, 'error');
+    schedulePoll(entry, 1000);
+  }
+}
+
+function retryGeneration(entry) {
+  if (!entry.workflow) {
+    announce(`${entry.version} 缺少工作流快照，無法重試。`, 'error');
+    return;
+  }
+  submitGeneration(entry.workflow, entry.id);
 }
 
 function resumePendingGenerations() {
@@ -571,6 +738,16 @@ $('#download-prompt').addEventListener('click', downloadPrompt);
 $('#export-workflow').addEventListener('click', exportWorkflow);
 $('#reset-workflow').addEventListener('click', resetWorkflow);
 $('#generate-video').addEventListener('click', generateVideo);
+versionHistory.addEventListener('click', (event) => {
+  const cancelButton = event.target.closest('[data-cancel-history]');
+  const retryButton = event.target.closest('[data-retry-history]');
+  const entryId = cancelButton?.dataset.cancelHistory || retryButton?.dataset.retryHistory;
+  if (!entryId) return;
+  const entry = history.find((item) => item.id === entryId);
+  if (!entry) return;
+  if (cancelButton) cancelGeneration(entry);
+  if (retryButton) retryGeneration(entry);
+});
 $('#open-api-panel').addEventListener('click', showApiModal);
 $('#close-api-panel').addEventListener('click', hideApiModal);
 $('#save-api-config').addEventListener('click', saveApiConfig);

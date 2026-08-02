@@ -1,0 +1,20 @@
+acceptance:
+  id: CHANGE-003
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 6 JavaScript modules"
+    - "npm test（moviedesign）：13 tests passed"
+    - "npm run build（moviedesign）：dist 產物建立成功"
+    - "adapter timeout 測試確認 504、REQUEST_TIMEOUT、retryable=true"
+    - "本機代理測試確認結構化 validation error 與 DELETE cancellation"
+    - "workflow parser 測試確認重複 id、未知 node type、欄位過長與超大 JSON 會拒絕"
+    - "隔離 mock 瀏覽器驗收：v001 送出後顯示生成中，取消後顯示已取消並提供重試生成"
+    - "隔離 mock 瀏覽器驗收：重試建立 v002；localStorage 未保存 mock API Key"
+  manual_notes:
+    - "MANUAL_REQUIRED：尚未使用正式 Ark Key 進行付費真實影片生成"

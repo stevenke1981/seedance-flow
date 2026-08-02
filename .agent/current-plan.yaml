@@ -26,3 +26,8 @@ plan:
       output: "API 設定、生成影片入口、v001 版次歷史與安全錯誤狀態"
       verify: "adapter/proxy tests、本機 health、瀏覽器入口；真實供應商需 MANUAL_REQUIRED"
       status: completed
+    - id: T6
+      task: "強化生成任務可靠性與輸入資料驗證"
+      output: "timeout、retry、cancel、structured errors、history controls、workflow bounds"
+      verify: "13 tests、本機 mock cancellation/retry、上層主站 gates"
+      status: completed

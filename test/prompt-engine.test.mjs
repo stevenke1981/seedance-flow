@@ -32,3 +32,14 @@ test('invalid workflow payloads fail loudly', () => {
   assert.throws(() => parseWorkflow('{"nodes":[]}'), /至少需要一個節點/);
   assert.throws(() => parseWorkflow('{"model":"Seedance 2.5"}'), /缺少 nodes 陣列/);
 });
+
+test('workflow parser rejects duplicate and unknown nodes before rendering', () => {
+  const node = { id: 'scene-1', type: 'scene', values: {} };
+  assert.throws(() => parseWorkflow({ nodes: [node, { ...node }] }), /id 重複/);
+  assert.throws(() => parseWorkflow({ nodes: [{ id: 'unknown-1', type: 'unknown', values: {} }] }), /不支援的節點類型/);
+});
+
+test('workflow parser enforces serialized and field size limits', () => {
+  assert.throws(() => parseWorkflow({ nodes: [{ id: 'scene-1', type: 'scene', values: { subject: 'x'.repeat(10001) } }] }), /欄位過長/);
+  assert.throws(() => parseWorkflow(`{"nodes":[{"id":"scene-1","type":"scene","values":{}}]}${' '.repeat(2_000_001)}`), /檔案過大/);
+});

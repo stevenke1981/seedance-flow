@@ -149,6 +149,8 @@ h2 { font-size: 14px; letter-spacing: -.01em; }
 .history-video { width: 100%; margin-top: 8px; background: #080b0c; }
 .history-links { display: flex; gap: 8px; margin-top: 8px; }
 .history-link { color: var(--cyan); font-size: 10px; text-decoration: none; } .history-link:hover { text-decoration: underline; }
+.history-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.history-action { min-height: 28px; padding: 5px 9px; font-size: 10px; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 18px; background: rgba(3, 6, 7, .74); }
 .modal-backdrop[hidden] { display: none; }
 .api-modal { width: min(100%, 430px); padding: 20px; border: 1px solid var(--line-strong); background: #151e20; box-shadow: 0 22px 60px rgba(0,0,0,.42); }

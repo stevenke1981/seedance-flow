@@ -1,4 +1,4 @@
-import { createGenerationTask, getGenerationTask, DEFAULT_ARK_BASE_URL } from '../src/ark-adapter.mjs';
+import { cancelGenerationTask, createGenerationTask, getGenerationTask, DEFAULT_ARK_BASE_URL } from '../src/ark-adapter.mjs';
 
 const MAX_BODY_BYTES = 1_048_576;
 
@@ -15,7 +15,7 @@ async function readJson(request) {
 }
 
 function sendJson(response, status, body) {
-  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
   response.end(JSON.stringify(body));
 }
 
@@ -44,10 +44,22 @@ export function createApiHandler(options = {}) {
         sendJson(response, 200, result);
         return true;
       }
+      if (request.method === 'DELETE' && taskMatch) {
+        const result = await cancelGenerationTask(decodeURIComponent(taskMatch[1]), apiKey(request), { fetchImpl, baseUrl });
+        sendJson(response, 200, result);
+        return true;
+      }
       return false;
     } catch (error) {
       const status = Number.isInteger(error.status) ? error.status : 502;
-      sendJson(response, status, { error: status >= 500 ? 'Seedance API request failed.' : error.message });
+      sendJson(response, status, {
+        error: {
+          message: status >= 500 ? (error.message || 'Seedance API request failed.') : error.message,
+          code: error.code || 'SEEDANCE_API_ERROR',
+          requestId: error.requestId || '',
+          retryable: error.retryable === true,
+        },
+      });
       return true;
     }
   };

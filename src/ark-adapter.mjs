@@ -1,4 +1,5 @@
 export const DEFAULT_ARK_BASE_URL = 'https://ark.cn-beijing.volces.com/api/v3';
+export const DEFAULT_REQUEST_TIMEOUT_MS = 45_000;
 export const TERMINAL_STATUSES = new Set(['succeeded', 'failed', 'expired', 'cancelled']);
 export const ALLOWED_RATIOS = new Set(['16:9', '9:16', '1:1', '4:3']);
 
@@ -33,6 +34,34 @@ function endpoint(baseUrl, suffix = '') {
   return `${String(baseUrl || DEFAULT_ARK_BASE_URL).replace(/\/$/, '')}/contents/generations/tasks${suffix}`;
 }
 
+function requestContext(options = {}) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(1_000, options.timeoutMs) : DEFAULT_REQUEST_TIMEOUT_MS;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const upstreamSignal = options.signal;
+  const abortFromCaller = () => controller.abort();
+  if (upstreamSignal) {
+    if (upstreamSignal.aborted) controller.abort();
+    else upstreamSignal.addEventListener('abort', abortFromCaller, { once: true });
+  }
+  return {
+    signal: controller.signal,
+    timedOut: () => timedOut,
+    cleanup: () => {
+      clearTimeout(timer);
+      upstreamSignal?.removeEventListener('abort', abortFromCaller);
+    },
+  };
+}
+
+function isRetryableStatus(status) {
+  return status === 408 || status === 409 || status === 425 || status === 429 || status >= 500;
+}
+
 async function parseResponse(response) {
   const raw = await response.text();
   let body = {};
@@ -41,9 +70,30 @@ async function parseResponse(response) {
     const error = new Error(body?.error?.message || body?.message || `Seedance API 回應 ${response.status}`);
     error.status = response.status;
     error.code = body?.error?.code;
+    error.requestId = body?.request_id || body?.error?.request_id || response.headers?.get?.('x-request-id') || response.headers?.get?.('x-tt-logid') || '';
+    error.retryable = isRetryableStatus(response.status);
     throw error;
   }
   return body;
+}
+
+async function requestJson(fetchImpl, url, init, options = {}) {
+  const context = requestContext(options);
+  try {
+    const response = await fetchImpl(url, { ...init, signal: context.signal });
+    return await parseResponse(response);
+  } catch (error) {
+    if (context.timedOut()) {
+      throw Object.assign(new Error('Seedance API 請求逾時，請稍後重試。'), { status: 504, code: 'REQUEST_TIMEOUT', retryable: true });
+    }
+    if (error?.name === 'AbortError') {
+      throw Object.assign(new Error('Seedance API 請求已取消。'), { status: 499, code: 'REQUEST_ABORTED', retryable: false });
+    }
+    if (error?.status) throw error;
+    throw Object.assign(new Error('無法連線到 Seedance API，請檢查網路或本機代理。'), { status: 502, code: 'UPSTREAM_NETWORK_ERROR', retryable: true, cause: error });
+  } finally {
+    context.cleanup();
+  }
 }
 
 export async function createGenerationTask(input, options = {}) {
@@ -52,12 +102,11 @@ export async function createGenerationTask(input, options = {}) {
   const baseUrl = options.baseUrl || DEFAULT_ARK_BASE_URL;
   const promptWithControls = `${validated.prompt}\n\n--ratio ${validated.ratio} --dur ${validated.duration}`;
   const content = [{ type: 'text', text: promptWithControls }];
-  const response = await fetchImpl(endpoint(baseUrl), {
+  const body = await requestJson(fetchImpl, endpoint(baseUrl), {
     method: 'POST',
     headers: headers(validated.apiKey),
     body: JSON.stringify({ model: validated.model, content, return_last_frame: true }),
-  });
-  const body = await parseResponse(response);
+  }, options);
   if (!body.id || typeof body.id !== 'string') throw new Error('Seedance API 未回傳任務 ID。');
   return { id: body.id, model: validated.model, status: 'queued' };
 }
@@ -69,9 +118,19 @@ export async function getGenerationTask(taskId, apiKey, options = {}) {
   if (!key) throw invalidInput('查詢任務需要 Ark API Key。');
   const fetchImpl = options.fetchImpl || fetch;
   const baseUrl = options.baseUrl || DEFAULT_ARK_BASE_URL;
-  const response = await fetchImpl(endpoint(baseUrl, `/${encodeURIComponent(id)}`), { headers: headers(key) });
-  const body = await parseResponse(response);
+  const body = await requestJson(fetchImpl, endpoint(baseUrl, `/${encodeURIComponent(id)}`), { headers: headers(key) }, options);
   return normalizeGenerationTask(body);
+}
+
+export async function cancelGenerationTask(taskId, apiKey, options = {}) {
+  const id = trimString(taskId);
+  const key = trimString(apiKey);
+  if (!id) throw invalidInput('取消任務需要任務 ID。');
+  if (!key) throw invalidInput('取消任務需要 Ark API Key。');
+  const fetchImpl = options.fetchImpl || fetch;
+  const baseUrl = options.baseUrl || DEFAULT_ARK_BASE_URL;
+  const body = await requestJson(fetchImpl, endpoint(baseUrl, `/${encodeURIComponent(id)}`), { method: 'DELETE', headers: headers(key) }, options);
+  return body && typeof body === 'object' ? normalizeGenerationTask({ id, status: 'cancelled', ...body }) : { id, status: 'cancelled', terminal: true };
 }
 
 export function normalizeGenerationTask(body = {}) {
@@ -84,6 +143,7 @@ export function normalizeGenerationTask(body = {}) {
     videoUrl: trimString(content.video_url || content.videoUrl),
     lastFrameUrl: trimString(content.last_frame_url || content.lastFrameUrl),
     error: body.error ? { code: trimString(body.error.code), message: trimString(body.error.message) } : null,
+    requestId: trimString(body.request_id || body.requestId),
     usage: body.usage || null,
     createdAt: body.created_at || null,
     updatedAt: body.updated_at || null,

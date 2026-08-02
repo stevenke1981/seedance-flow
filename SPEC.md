@@ -24,6 +24,8 @@
 7. 編輯後自動儲存至 localStorage；重新整理能還原；提供「重設範例」按鈕。
 8. 可在 API 設定填入裝置本地的 Ark API Key 與模型／Endpoint ID，送出目前提示詞生成任務，輪詢 queued／running／succeeded／failed 狀態。
 9. 每次生成建立遞增版次，保存提示詞、摘要、工作流快照、任務狀態與影片 URL；歷史不保存 API Key。
+10. 生成任務必須有逾時上限、暫時性錯誤退避重試、取消任務與失敗／完成版本再次生成入口。
+11. API 錯誤使用結構化 code、request ID 與 retryable 欄位；工作流輸入拒絕過大 JSON、未知節點類型、重複 ID 與超長欄位。
 
 ## 內容對齊方向
 
@@ -36,6 +38,7 @@
 - 將提示詞組裝、序列化與還原邏輯放在可被 Node test 匯入的純函式模組。
 - 不使用假成功：每個按鈕要有實際副作用或清楚錯誤狀態；外部 API 未提供認證時必須明確停在可理解的錯誤。
 - API Key 只能由瀏覽器記憶體經 `X-Ark-Api-Key` 傳給本機代理；不得進入 localStorage、版本歷史、伺服器日誌或錯誤回應。
+- 外部 request 必須有 timeout；輪詢必須有 deadline 與 retry backoff；取消操作必須清理前端 timer，避免重複請求。
 - 為核心互動加上 aria-label、鍵盤可操作性與明顯 focus 狀態。
 
 ## 驗收條件
@@ -45,4 +48,5 @@
 - 窄視窗（約 390px）不水平溢位，仍能操作 Inspector 與提示預覽。
 - 失敗狀態（空提示、剪貼簿拒絕、無效匯出）有可理解的訊息。
 - API 代理健康檢查可用；缺少 Key、模型或無效參數回傳 4xx；上游錯誤保留安全的錯誤摘要，不回傳金鑰。
+- 任務可在 queued／running 狀態取消；failed／cancelled／expired／succeeded 版本提供再次生成入口。
 - 真實火山引擎生成需以主人提供的有效 Key、模型／Endpoint ID 及費用確認進行；沒有這些條件時標示 `MANUAL_REQUIRED`，不得宣稱已生成影片。

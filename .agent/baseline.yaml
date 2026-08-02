@@ -1,5 +1,5 @@
 baseline:
-  id: BASELINE-20260802-002
+  id: BASELINE-20260802-003
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -9,6 +9,8 @@ baseline:
     - "桌面與 390px 手機響應式版面"
     - "Ark 本機代理建立／查詢非同步生成任務"
     - "提示詞與影片 URL 的 v001、v002…版次歷史"
+    - "生成逾時、重試退避、取消任務與失敗重試入口"
+    - "工作流匯入的大小、節點類型、ID 與欄位驗證"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
@@ -34,3 +36,4 @@ baseline:
   evidence:
     - ".agent/acceptance/CHANGE-001-acceptance.yaml"
     - ".agent/acceptance/CHANGE-002-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-003-acceptance.yaml"

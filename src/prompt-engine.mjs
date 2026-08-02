@@ -1,4 +1,11 @@
 export const STORAGE_KEY = 'seedance-flow-workflow-v1';
+export const WORKFLOW_LIMITS = Object.freeze({
+  maxNodes: 100,
+  maxNodeIdLength: 120,
+  maxFieldLength: 10000,
+  maxSerializedBytes: 2_000_000,
+  maxCoordinate: 1_000_000,
+});
 
 export const NODE_LIBRARY = [
   { type: 'scene', title: 'Scene', subtitle: '場景與主體', icon: 'SC', accent: 'amber' },
@@ -149,14 +156,28 @@ export function serializeWorkflow(workflow) {
 }
 
 export function parseWorkflow(serialized) {
+  if (typeof serialized === 'string' && serialized.length > WORKFLOW_LIMITS.maxSerializedBytes) {
+    throw new Error('工作流格式無效：檔案過大。');
+  }
   const parsed = typeof serialized === 'string' ? JSON.parse(serialized) : serialized;
-  if (!parsed || !Array.isArray(parsed.nodes)) throw new Error('工作流格式無效：缺少 nodes 陣列。');
-  const nodes = parsed.nodes.filter((node) => node && typeof node.id === 'string' && typeof node.type === 'string').map((node) => ({
-    ...node,
-    values: node.values && typeof node.values === 'object' ? { ...node.values } : {},
-    x: Number.isFinite(node.x) ? node.x : 80,
-    y: Number.isFinite(node.y) ? node.y : 80,
-  }));
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !Array.isArray(parsed.nodes)) throw new Error('工作流格式無效：缺少 nodes 陣列。');
+  if (parsed.nodes.length > WORKFLOW_LIMITS.maxNodes) throw new Error(`工作流格式無效：節點不可超過 ${WORKFLOW_LIMITS.maxNodes} 個。`);
+  const seenIds = new Set();
+  const nodes = parsed.nodes.map((node, index) => {
+    if (!node || typeof node !== 'object' || Array.isArray(node) || typeof node.id !== 'string' || typeof node.type !== 'string') {
+      throw new Error(`工作流格式無效：第 ${index + 1} 個節點缺少 id 或 type。`);
+    }
+    if (node.id.length > WORKFLOW_LIMITS.maxNodeIdLength || seenIds.has(node.id)) throw new Error(`工作流格式無效：節點 id 重複或過長（${node.id}）。`);
+    if (!NODE_LIBRARY.some((item) => item.type === node.type)) throw new Error(`工作流格式無效：不支援的節點類型 ${node.type}。`);
+    seenIds.add(node.id);
+    const values = node.values && typeof node.values === 'object' && !Array.isArray(node.values) ? { ...node.values } : {};
+    Object.entries(values).forEach(([key, raw]) => {
+      if (typeof raw !== 'string' || raw.length > WORKFLOW_LIMITS.maxFieldLength) throw new Error(`工作流格式無效：${node.id}.${key} 欄位過長或不是文字。`);
+    });
+    const x = Number.isFinite(node.x) && Math.abs(node.x) <= WORKFLOW_LIMITS.maxCoordinate ? node.x : 80;
+    const y = Number.isFinite(node.y) && Math.abs(node.y) <= WORKFLOW_LIMITS.maxCoordinate ? node.y : 80;
+    return { ...node, values, x, y };
+  });
   if (!nodes.length) throw new Error('工作流格式無效：至少需要一個節點。');
   return { schemaVersion: 1, model: parsed.model || 'Seedance 2.5', duration: parsed.duration || 30, ratio: parsed.ratio || '16:9 橫式', nodes };
 }

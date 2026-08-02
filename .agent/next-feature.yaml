@@ -1,6 +1,6 @@
 next_feature:
   autonomy: recommend_only
-  title: "生成版次比較與歷史匯出"
-  evidence: "目前已保存每次生成的 prompt、hash、workflow 快照與影片 URL，但尚無版次 diff、篩選或歷史 JSON 匯出。"
-  rationale: "能直接支援 Seedance 迭代工作流的選版與回溯；需先設計長提示詞差異檢視與過期影片 URL 的處理。"
-  not_implemented_reason: "本輪聚焦安全 API 代理與可驗證的生成任務生命週期；真實外部生成仍需主人提供認證後驗收。"
+  title: "參考資產上傳與首尾幀連續生成"
+  evidence: "目前 prompt 可寫入參考資產文字，但 API payload 仍只有 text content；官方 Ark API 已提供多媒體 content 與尾幀回傳能力。"
+  rationale: "這是從文字提示工作台進入實際圖生／多段影片製作的最大能力提升。"
+  not_implemented_reason: "本輪先完成可靠性、取消、重試與輸入資料邊界；資產上傳需要新的本地 Blob 儲存與 provider payload 設計。"

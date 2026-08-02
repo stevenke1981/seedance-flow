@@ -1,0 +1,18 @@
+change:
+  id: CHANGE-003
+  title: "強化生成任務可靠性與輸入資料驗證"
+  classification: hardening
+  risk: MEDIUM
+  scope: "Ark adapter、本機代理、生成歷史 UI 與工作流 parser"
+  impact:
+    modules:
+      - "src/ark-adapter.mjs"
+      - "scripts/api-server.mjs"
+      - "src/app.js / styles.css"
+      - "src/prompt-engine.mjs / test/*.test.mjs"
+    protected_flows:
+      - "API Key 不落盤、不回傳"
+      - "上層主站與既有工作流功能"
+    public_contract: "新增 DELETE /api/generations/:id；錯誤回應改為結構化 error 物件"
+  rollback: "回復 CHANGE-003 相關檔案即可；CHANGE-001/002 工作流資料格式保持向下相容"
+  external_gate: "真實 Ark 影片仍需有效認證與費用確認"
