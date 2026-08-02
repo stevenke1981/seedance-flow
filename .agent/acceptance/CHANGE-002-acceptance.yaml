@@ -1,0 +1,22 @@
+acceptance:
+  id: CHANGE-002
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 6 JavaScript modules"
+    - "npm test（moviedesign）：8 tests passed，涵蓋 task payload、輪詢正規化、本機代理與上游 429"
+    - "npm run build（moviedesign）：dist 產物建立成功"
+    - "本機 /api/health 回傳 provider=volcengine-ark 與官方 Ark base URL"
+    - "無 API Key 的 /api/generations 會在 adapter validation 停止，不會呼叫上游"
+    - "隔離 mock upstream 瀏覽器驗收：生成 v001 → running → succeeded，版本卡片出現影片元素與連結"
+    - "隔離 mock upstream localStorage 驗證：history 不含 mock API Key，未建立 API 設定儲存鍵"
+    - "API 設定明示金鑰只留目前分頁記憶體；版本歷史只保存 prompt、hash、workflow、status 與 video URL"
+    - "官方 Create/Get contents generations task API 規格已對齊 adapter"
+  manual_notes:
+    - "瀏覽器可開啟 API 設定與生成入口；未以假金鑰呼叫外部供應商"
+    - "MANUAL_REQUIRED：需主人提供 Ark API Key、可用模型／Endpoint ID，並確認外部生成費用後才能驗收實際影片 URL"

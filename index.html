@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Seedance Flow：以節點組合 Seedance 2.5／即夢影片提示詞的本地工作台。" />
+    <title>Seedance Flow — 節點式影片提示詞工作台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">SF</div>
+          <div>
+            <p class="eyebrow">PROMPT WORKBENCH / 01</p>
+            <h1>Seedance <span>Flow</span></h1>
+          </div>
+        </div>
+        <div class="topbar-meta">
+          <div class="model-chip"><span class="status-dot"></span><span>SEEDANCE 2.5</span><span class="chip-muted">DREAMINA</span></div>
+          <div id="save-state" class="save-state" role="status" aria-live="polite">LOCAL DRAFT · READY</div>
+        </div>
+        <div class="topbar-actions">
+          <button id="open-api-panel" class="button button-quiet" type="button">API 設定</button>
+          <button id="reset-workflow" class="button button-quiet" type="button">重設範例</button>
+          <button id="export-workflow" class="button button-primary" type="button"><span aria-hidden="true">↗</span> 匯出工作流</button>
+        </div>
+      </header>
+
+      <div class="main-grid">
+        <aside class="panel sidebar-panel" aria-label="節點庫">
+          <div class="panel-heading">
+            <div><p class="eyebrow">NODE LIBRARY</p><h2>節點庫</h2></div>
+            <span class="count-badge" id="node-count">07</span>
+          </div>
+          <p class="panel-note">拖曳或點擊節點加入畫布。每個節點只負責一種導演決策。</p>
+          <div id="node-library" class="node-library"></div>
+          <div class="sidebar-footer">
+            <div class="legend-row"><span class="legend-dot legend-input"></span><span>輸入／創意意圖</span></div>
+            <div class="legend-row"><span class="legend-dot legend-control"></span><span>控制／時間與鏡頭</span></div>
+            <div class="legend-row"><span class="legend-dot legend-output"></span><span>輸出／限制條件</span></div>
+          </div>
+        </aside>
+
+        <main class="workspace-column">
+          <div class="workspace-toolbar">
+            <div class="toolbar-title"><span class="live-pulse"></span><span>SHOT GRAPH</span><span class="toolbar-divider"></span><span class="toolbar-subtitle">30 SEC / 4 BEATS</span></div>
+            <div class="toolbar-actions"><button id="zoom-out" class="icon-button" type="button" aria-label="縮小畫布">−</button><span id="zoom-level">100%</span><button id="zoom-in" class="icon-button" type="button" aria-label="放大畫布">＋</button></div>
+          </div>
+          <section id="canvas-viewport" class="canvas-viewport" aria-label="節點畫布">
+            <div id="canvas" class="node-canvas">
+              <svg id="edge-layer" class="edge-layer" aria-hidden="true"></svg>
+              <div class="canvas-label canvas-label-top">DIRECTION / FLOW</div>
+              <div class="canvas-label canvas-label-bottom">DRAG NODES · SELECT TO INSPECT</div>
+            </div>
+          </section>
+          <section class="timeline-card" aria-label="四拍時間軸">
+            <div class="timeline-heading"><div><p class="eyebrow">EDITING RHYTHM</p><h2>四拍節奏</h2></div><span class="timeline-total">00:30</span></div>
+            <div id="timeline" class="timeline-grid"></div>
+          </section>
+        </main>
+
+        <aside class="panel inspector-panel" aria-label="節點檢視器與提示詞預覽">
+          <div class="inspector-section inspector-editor">
+            <div class="panel-heading compact"><div><p class="eyebrow">INSPECTOR</p><h2 id="inspector-title">選取一個節點</h2></div><span id="selected-chip" class="selected-chip">—</span></div>
+            <div id="inspector-form" class="inspector-form"><div class="empty-inspector">從畫布選取節點，開始編排提示詞。</div></div>
+            <div class="inspector-actions"><button id="delete-node" class="button button-danger" type="button" disabled>刪除節點</button></div>
+          </div>
+          <div class="inspector-section prompt-section">
+            <div class="prompt-heading"><div><p class="eyebrow">PROMPT OUTPUT</p><h2>Seedance 提示詞</h2></div><span class="ready-badge">READY</span></div>
+            <div class="prompt-summary"><span id="prompt-line-count">00 LINES</span><span>LOCAL ONLY</span></div>
+            <pre id="prompt-output" class="prompt-output" tabindex="0" aria-label="生成的 Seedance 提示詞"></pre>
+            <div class="prompt-actions"><button id="copy-prompt" class="button button-primary" type="button"><span aria-hidden="true">⧉</span> 複製提示詞</button><button id="download-prompt" class="button button-quiet" type="button">下載 .txt</button></div>
+            <button id="generate-video" class="button generate-button" type="button"><span aria-hidden="true">▶</span> 生成影片</button>
+            <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
+          </div>
+          <div class="inspector-section history-section">
+            <div class="prompt-heading"><div><p class="eyebrow">VERSION HISTORY</p><h2>影片版本</h2></div><span id="history-count" class="selected-chip">00</span></div>
+            <p class="history-note">只在本機保存提示詞、任務狀態與影片連結；API 金鑰不會寫入歷史。</p>
+            <div id="version-history" class="version-history"><div class="empty-history">尚未提交影片生成任務。</div></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <div id="api-modal" class="modal-backdrop" hidden>
+      <section class="api-modal" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
+        <div class="prompt-heading"><div><p class="eyebrow">LOCAL PROVIDER BRIDGE</p><h2 id="api-modal-title">Ark API 設定</h2></div><button id="close-api-panel" class="icon-button" type="button" aria-label="關閉 API 設定">×</button></div>
+        <p class="api-note">金鑰只留在目前分頁的記憶體，不寫入 localStorage、工作流 JSON 或伺服器。按下生成時才會透過本機 proxy 傳送。</p>
+        <label class="field"><span class="field-label"><span>Ark API Key</span><span class="field-type">MEMORY ONLY</span></span><input id="ark-api-key" type="password" autocomplete="off" placeholder="貼上你的 Ark API Key" /></label>
+        <label class="field"><span class="field-label"><span>模型／Endpoint ID</span><span class="field-type">REQUIRED</span></span><input id="ark-model" type="text" autocomplete="off" placeholder="輸入控制台提供的 Seedance Endpoint ID" /></label>
+        <div class="api-modal-actions"><button id="clear-api-config" class="button button-danger" type="button">清除記憶體金鑰</button><button id="save-api-config" class="button button-primary" type="button">儲存到本分頁</button></div>
+        <p class="api-footnote">目前使用火山方舟 `/api/v3/contents/generations/tasks` 非同步任務 API；正式模型 ID 以你的控制台為準。</p>
+      </section>
+    </div>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

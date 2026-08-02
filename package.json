@@ -1,0 +1,16 @@
+{
+  "name": "seedance-flow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Seedance Flow：在瀏覽器本地執行的 Seedance 2.5／即夢多拍影片提示詞工作台（無外部執行期依賴）",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "build": "node scripts/build.mjs",
+    "lint": "node scripts/lint.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

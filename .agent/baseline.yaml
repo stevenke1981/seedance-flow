@@ -1,0 +1,36 @@
+baseline:
+  id: BASELINE-20260802-002
+  status: passed_with_manual_gate
+  accepted_features:
+    - "Seedance Flow 節點式工作台"
+    - "節點新增、選取、拖曳、刪除與 Inspector 欄位編輯"
+    - "四拍 30 秒 Seedance 2.5 提示詞組裝"
+    - "複製 fallback、TXT／JSON 匯出與 localStorage 還原"
+    - "桌面與 390px 手機響應式版面"
+    - "Ark 本機代理建立／查詢非同步生成任務"
+    - "提示詞與影片 URL 的 v001、v002…版次歷史"
+  critical_user_flows:
+    - "載入預設工作流並查看提示詞"
+    - "新增節點、編輯欄位、提示即時更新"
+    - "拖曳節點、重新整理後狀態保留"
+    - "下載 JSON 工作流與 TXT 提示詞"
+    - "API 設定不落盤，生成歷史可在本機查看任務狀態"
+  protected_behavior:
+    - "上層譯匠主站檔案與 .openai/hosting.json 不變"
+    - "上層 npm run lint、npm run build、npm test 通過"
+    - "API Key 只由目前分頁經本機代理傳送，不落盤、不回傳；工作流與版本歷史仍為瀏覽器 localStorage"
+  public_interfaces:
+    - "moviedesign 本地 dev server 入口"
+    - "schemaVersion=1 的 JSON 工作流匯出"
+  data_compatibility:
+    - "localStorage keys seedance-flow-workflow-v1、seedance-flow-history-v1（不含 API Key）"
+  environment:
+    - "Windows PowerShell"
+    - "Node.js 24.15.0"
+    - "agent-browser Chromium 390x844 與 1440x900"
+  known_limitations:
+    - "真實 Ark 影片生成尚待有效 API Key、模型／Endpoint ID 與費用確認（MANUAL_REQUIRED）"
+    - "瀏覽器若拒絕剪貼簿權限，需手動 Ctrl/Cmd+C"
+  evidence:
+    - ".agent/acceptance/CHANGE-001-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-002-acceptance.yaml"

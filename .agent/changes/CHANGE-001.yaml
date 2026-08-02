@@ -1,0 +1,16 @@
+change:
+  id: CHANGE-001
+  title: "建立 Seedance Flow 節點式影片提示詞工作台"
+  classification: feature
+  risk: LOW
+  scope: "只新增 moviedesign 子目錄，不改上層譯匠主站"
+  impact:
+    modules:
+      - "index.html / styles.css"
+      - "src/app.js"
+      - "src/prompt-engine.mjs"
+      - "scripts/dev-server.mjs / scripts/build.mjs"
+    protected_flows:
+      - "上層主站 lint、build、test"
+    public_contract: "無；本地靜態子專案"
+  rollback: "刪除 moviedesign 子目錄即可回復；上層主站檔案未變更"

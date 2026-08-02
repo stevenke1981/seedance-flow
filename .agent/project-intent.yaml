@@ -1,0 +1,32 @@
+intent:
+  goal: "建立可操作的 Seedance 2.5／即夢節點式影片提示詞工作台"
+  user_outcome: "使用者能以類 ComfyUI 節點組合場景、鏡頭、運動、風格、聲音與輸出設定，立即產生可貼入 Dreamina 的提示詞與 JSON。"
+  primary_user_scenario: "開啟工作台 → 編輯節點 → 預覽逐拍提示 → 複製 Seedance 提示詞或下載工作流。"
+  in_scope:
+    - "單頁桌面優先、手機可讀的節點式編輯器"
+    - "節點新增、刪除、拖曳、選取與欄位編輯"
+    - "四拍 30 秒場景提示組裝器"
+    - "Seedance 2.5 對齊的多模態參考、鏡頭運動、聲音與一致性欄位"
+    - "即時提示詞預覽、複製與 JSON 工作流匯出"
+    - "本地儲存目前工作流"
+  out_of_scope:
+    - "直接呼叫 Dreamina／Seedance API 或真實影片生成"
+    - "登入、付款、上傳真實使用者資產"
+    - "改動既有譯匠主站路由與部署設定"
+  constraints:
+    - "新專案限定於 moviedesign 子目錄"
+    - "不內嵌 API 金鑰或第三方憑證"
+    - "Qwen Code CLI 以 --approval-mode yolo 執行"
+  assumptions:
+    - "第一版以可下載、可貼上的提示詞工作流作為實際產出"
+    - "以官方 Dreamina Seedance 2.5 公開提示方向作為欄位設計依據"
+  protected_behavior:
+    - "不得破壞 E:/hanzi-translate 的既有主站"
+    - "所有生成內容在瀏覽器本地完成"
+  acceptance:
+    - "npm run dev 或等效預覽可啟動"
+    - "能新增節點並編輯至少場景、鏡頭、運動與輸出欄位"
+    - "提示詞預覽會隨欄位更新且包含四拍時間軸"
+    - "複製按鈕與 JSON 匯出產生可驗證內容"
+    - "重新整理後本地工作流仍可還原"
+    - "行動版不產生水平溢位，核心欄位仍可操作"

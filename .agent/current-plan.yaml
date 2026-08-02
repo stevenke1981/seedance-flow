@@ -1,0 +1,28 @@
+plan:
+  objective: "交付 Seedance 節點式提示詞工作台與安全的 Ark 非同步生成垂直切片"
+  tasks:
+    - id: T1
+      task: "建立獨立子專案 Walking Skeleton"
+      output: "可啟動的單頁工作台與基本節點畫布"
+      verify: "npm run dev 或 npm run build 成功"
+      status: completed
+    - id: T2
+      task: "完成節點編輯與提示詞組裝"
+      output: "節點操作、四拍預覽、提示詞複製與 JSON 匯出"
+      verify: "瀏覽器實際操作主流程"
+      status: completed
+    - id: T3
+      task: "補齊本地儲存、響應式與錯誤狀態"
+      output: "重新整理可還原、手機版可用、空值有明確處理"
+      verify: "聚焦測試與手動驗收"
+      status: completed
+    - id: T4
+      task: "更新驗收、Baseline 與下一功能評估"
+      output: ".agent/acceptance、baseline、next-feature"
+      verify: "npm run lint、npm run build、npm test 與瀏覽器驗收"
+      status: completed
+    - id: T5
+      task: "接入 Ark 本機代理、生成輪詢與版本歷史"
+      output: "API 設定、生成影片入口、v001 版次歷史與安全錯誤狀態"
+      verify: "adapter/proxy tests、本機 health、瀏覽器入口；真實供應商需 MANUAL_REQUIRED"
+      status: completed

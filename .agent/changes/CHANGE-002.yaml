@@ -1,0 +1,19 @@
+change:
+  id: CHANGE-002
+  title: "接入 Ark Seedance 非同步生成與提示詞版次歷史"
+  classification: feature
+  risk: HIGH
+  scope: "只新增 moviedesign 子目錄內的本機 API adapter、生成 UI 與 localStorage 版次紀錄"
+  impact:
+    modules:
+      - "src/ark-adapter.mjs"
+      - "scripts/api-server.mjs / scripts/dev-server.mjs"
+      - "src/app.js / index.html / styles.css"
+      - "README.md / SPEC.md"
+    protected_flows:
+      - "API Key 不寫入 localStorage、版本歷史或回應"
+      - "上層主站 lint、build、test"
+    public_contract: "本機 /api/health、/api/generations 與 /api/generations/:id 代理"
+  provider: "Volcengine Ark contents generations task API"
+  rollback: "移除 CHANGE-002 檔案涉及的 API/UI 變更；保留 CHANGE-001 工作台與既有 localStorage key"
+  external_gate: "MANUAL_REQUIRED：需使用者提供有效 Ark API Key、模型／Endpoint ID 並確認可能產生費用"

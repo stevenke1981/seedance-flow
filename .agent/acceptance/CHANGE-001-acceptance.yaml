@@ -1,0 +1,23 @@
+acceptance:
+  id: CHANGE-001
+  status: passed
+  build_or_launch: PASS
+  requested_user_scenario: PASS
+  affected_regression: PASS
+  critical_flows: PASS
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 4 JavaScript modules"
+    - "npm test（moviedesign）：4 tests passed"
+    - "npm run build（moviedesign）：dist 產物建立成功"
+    - "agent-browser http://127.0.0.1:4317：載入 Seedance Flow、7 個預設節點與提示預覽"
+    - "新增 Scene 節點、編輯主體、提示預覽包含新內容"
+    - "滑鼠拖曳節點後位置 131px/114px，重新整理後位置仍被還原"
+    - "匯出 artifacts/seedance-flow-workflow.json：schemaVersion=1、model=Seedance 2.5、nodes=8、prompt 存在"
+    - "390x844：document scrollWidth=390，手機 Inspector 與提示區可操作"
+    - "截圖：artifacts/desktop.png、artifacts/mobile.png、artifacts/mobile-inspector.png"
+    - "上層 npm run lint：PASS；npm run build：PASS；npm test：14 tests passed"
+  manual_notes:
+    - "剪貼簿權限遭瀏覽器拒絕時，已實際驗證 fallback 會選取提示詞並顯示操作訊息"
+    - "本輪未呼叫真實 Dreamina／Seedance 影片生成 API；該能力不在範圍內"
