@@ -1,0 +1,19 @@
+change:
+  id: CHANGE-004
+  title: "加入參考資產預覽與尾幀接續"
+  classification: feature
+  risk: MEDIUM
+  scope: "Reference 節點、Ark image_url payload、影片歷史尾幀與本機預覽"
+  impact:
+    modules:
+      - "src/prompt-engine.mjs"
+      - "src/ark-adapter.mjs"
+      - "src/app.js / styles.css"
+      - "test/ark-adapter.test.mjs / test/prompt-engine.test.mjs"
+    protected_flows:
+      - "API Key 不落盤、不回傳"
+      - "本機檔案只作預覽，不會被當作公開 URL"
+      - "上層主站與既有工作流功能"
+    public_contract: "Ark content 新增 HTTPS image_url；成功回應可保存 last_frame_url 並回填下一段"
+  rollback: "回復 CHANGE-004 相關檔案即可；既有文字提示與歷史欄位保持相容"
+  external_gate: "真實 Ark 影片仍需有效認證、模型／Endpoint ID 與費用確認"

@@ -7,6 +7,22 @@ function trimString(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeImageUrls(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) throw invalidInput('參考圖片必須是 URL 陣列。');
+  const urls = [...new Set(value.map(trimString).filter(Boolean))];
+  if (urls.length > 3) throw invalidInput('每個生成任務最多附加 3 張參考圖片。');
+  urls.forEach((url) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:') throw new Error('protocol');
+    } catch {
+      throw invalidInput('參考圖片必須是可由 Ark 存取的 HTTPS URL。');
+    }
+  });
+  return urls;
+}
+
 function invalidInput(message) {
   return Object.assign(new Error(message), { status: 400 });
 }
@@ -17,13 +33,14 @@ export function validateGenerationInput(input = {}) {
   const prompt = trimString(input.prompt);
   const ratio = trimString(input.ratio) || '16:9';
   const duration = Number(input.duration);
+  const referenceImages = normalizeImageUrls(input.referenceImages);
   if (!apiKey) throw invalidInput('請先在 API 設定輸入 Ark API Key；金鑰只會留在目前分頁記憶體。');
   if (!model) throw invalidInput('請填寫 Seedance 模型或 Endpoint ID。');
   if (!prompt) throw invalidInput('提示詞不可為空白。');
   if (prompt.length > 10000) throw invalidInput('提示詞過長（上限 10,000 字元）。');
   if (!ALLOWED_RATIOS.has(ratio)) throw invalidInput('不支援的畫面比例。');
   if (!Number.isFinite(duration) || duration < 1 || duration > 180) throw invalidInput('時長必須介於 1 到 180 秒。');
-  return { apiKey, model, prompt, ratio, duration: Math.round(duration), generateAudio: input.generateAudio === true };
+  return { apiKey, model, prompt, ratio, duration: Math.round(duration), referenceImages, generateAudio: input.generateAudio === true };
 }
 
 function headers(apiKey) {
@@ -101,7 +118,10 @@ export async function createGenerationTask(input, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const baseUrl = options.baseUrl || DEFAULT_ARK_BASE_URL;
   const promptWithControls = `${validated.prompt}\n\n--ratio ${validated.ratio} --dur ${validated.duration}`;
-  const content = [{ type: 'text', text: promptWithControls }];
+  const content = [
+    { type: 'text', text: promptWithControls },
+    ...validated.referenceImages.map((url) => ({ type: 'image_url', image_url: { url } })),
+  ];
   const body = await requestJson(fetchImpl, endpoint(baseUrl), {
     method: 'POST',
     headers: headers(validated.apiKey),

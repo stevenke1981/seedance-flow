@@ -1,0 +1,21 @@
+acceptance:
+  id: CHANGE-004
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 6 JavaScript modules"
+    - "npm test（moviedesign）：16 tests passed"
+    - "npm run build（moviedesign）：dist 產物建立成功"
+    - "瀏覽器 mock 驗收：新增 Reference 節點、上傳 desktop.png 顯示本機預覽，並保留 HTTPS URL 欄位"
+    - "提示詞預覽包含角色用途與 https://cdn.example/reference.png"
+    - "mock Ark payload 包含 type=image_url、HTTPS URL 與 return_last_frame=true"
+    - "mock 完成版本顯示影片尾幀與用尾幀建立下一段按鈕"
+    - "點擊尾幀接續後建立／更新 Reference 節點，role=首幀參考 且回填尾幀 URL"
+    - "localStorage 只保存工作流與歷史，未保存 mock API Key"
+  manual_notes:
+    - "MANUAL_REQUIRED：尚未使用正式 Ark Key 進行付費真實影片生成"

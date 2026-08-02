@@ -31,3 +31,8 @@ plan:
       output: "timeout、retry、cancel、structured errors、history controls、workflow bounds"
       verify: "13 tests、本機 mock cancellation/retry、上層主站 gates"
       status: completed
+    - id: T7
+      task: "加入參考資產預覽、HTTPS image payload 與尾幀接續"
+      output: "Asset 節點、圖片 URL 驗證、本機預覽、歷史尾幀回填"
+      verify: "adapter payload tests、瀏覽器 mock 產生後回填下一段、不得把本機檔案假裝成可公開 URL"
+      status: completed

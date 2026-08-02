@@ -15,6 +15,7 @@ export const NODE_LIBRARY = [
   { type: 'style', title: 'Style', subtitle: '光線與風格', icon: 'ST', accent: 'lime' },
   { type: 'audio', title: 'Audio', subtitle: '音效與語音', icon: 'AU', accent: 'blue' },
   { type: 'output', title: 'Output', subtitle: '格式與限制', icon: 'OUT', accent: 'orange' },
+  { type: 'asset', title: 'Reference', subtitle: '參考資產', icon: 'RF', accent: 'orange' },
 ];
 
 const FIELD_DEFINITIONS = {
@@ -53,6 +54,11 @@ const FIELD_DEFINITIONS = {
     { key: 'duration', label: '時長', type: 'select', options: ['10 秒', '15 秒', '30 秒'] },
     { key: 'constraints', label: '負面與限制', type: 'textarea', placeholder: '不要字幕、不要浮水印、不要多餘人物、避免臉部變形與閃爍' },
   ],
+  asset: [
+    { key: 'role', label: '資產用途', type: 'select', options: ['角色一致性', '首幀參考', '產品／場景參考'] },
+    { key: 'referenceUrl', label: 'HTTPS 參考圖 URL', type: 'text', placeholder: 'https://example.com/reference.png' },
+    { key: 'notes', label: '資產備註', type: 'textarea', placeholder: '保持角色服裝、臉部與道具位置一致' },
+  ],
 };
 
 const DEFAULT_VALUES = {
@@ -63,6 +69,7 @@ const DEFAULT_VALUES = {
   style: { visual: '寫實電影感、低飽和青橙色調、細緻膠片顆粒', lighting: '冷色環境光搭配暖色店家窗光，邊緣輪廓光', mood: '孤獨、克制，最後帶一點希望' },
   audio: { soundscape: '雨聲、遠處機車通過、低沉城市底噪', voice: '無台詞；若有旁白，使用溫暖、清晰、近距離的聲音', music: 'minimal piano pulse, restrained cinematic rise' },
   output: { ratio: '16:9 橫式', duration: '30 秒', constraints: '不要字幕、不要浮水印、不要多餘人物、避免臉部變形與閃爍' },
+  asset: { role: '角色一致性', referenceUrl: '', notes: '參考圖必須是 Ark 可存取的 HTTPS URL；本機檔案只作預覽。' },
 };
 
 const DEFAULT_LAYOUT = [
@@ -122,7 +129,12 @@ export function buildPrompt(nodes, settings = {}) {
   const model = settings.model || 'Seedance 2.5';
   const duration = settings.duration || value(safeNodes, 'output', 'duration', '30 秒');
   const ratio = settings.ratio || value(safeNodes, 'output', 'ratio', '16:9 橫式');
-  const references = [value(safeNodes, 'character', 'reference'), '將參考資產綁定到角色、產品或動作，不改變其身份'].filter(Boolean).join('；');
+  const assetReferences = safeNodes.filter((node) => node.type === 'asset').map((node) => {
+    const role = node.values?.role || '參考資產';
+    const url = node.values?.referenceUrl || '待填 HTTPS URL';
+    return `${role}：${url}`;
+  });
+  const references = [value(safeNodes, 'character', 'reference'), ...assetReferences, '將參考資產綁定到角色、產品或動作，不改變其身份'].filter(Boolean).join('；');
   const beats = beatLines(safeNodes);
 
   return [

@@ -1,6 +1,6 @@
 next_feature:
   autonomy: recommend_only
-  title: "參考資產上傳與首尾幀連續生成"
-  evidence: "目前 prompt 可寫入參考資產文字，但 API payload 仍只有 text content；官方 Ark API 已提供多媒體 content 與尾幀回傳能力。"
-  rationale: "這是從文字提示工作台進入實際圖生／多段影片製作的最大能力提升。"
-  not_implemented_reason: "本輪先完成可靠性、取消、重試與輸入資料邊界；資產上傳需要新的本地 Blob 儲存與 provider payload 設計。"
+  title: "正式部署 API bridge 與成本確認"
+  evidence: "參考圖片 image_url payload 與尾幀接續已在本機 mock 流程完成，但公開部署仍只有本機 API bridge；真實 Ark 生成尚未取得有效認證與費用確認。"
+  rationale: "沒有安全部署的 API bridge，公開靜態網站無法真正生成影片；外部生成也涉及金鑰、額度、費用與運營責任。"
+  not_implemented_reason: "需要部署目標、正式 Ark 認證、成本上限與安全邊界確認，屬外部狀態與可能付費的高風險工作，先列為 recommend_only。"

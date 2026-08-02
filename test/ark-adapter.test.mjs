@@ -26,6 +26,24 @@ test('Ark adapter creates a task with official content-generation shape', async 
   assert.equal(payload.return_last_frame, true);
 });
 
+test('Ark adapter appends HTTPS reference images as image_url content', async () => {
+  let payload;
+  await createGenerationTask({ apiKey: 'device-only-key', model: 'seedance-endpoint', prompt: '保持角色一致', ratio: '16:9', duration: 5, referenceImages: ['https://cdn.example/reference.png', 'https://cdn.example/last-frame.png'] }, {
+    baseUrl: 'https://ark.example.test/api/v3',
+    fetchImpl: async (_url, options) => { payload = JSON.parse(options.body); return responseJson({ id: 'cgt-test-image-001' }); },
+  });
+  assert.deepEqual(payload.content.slice(1), [
+    { type: 'image_url', image_url: { url: 'https://cdn.example/reference.png' } },
+    { type: 'image_url', image_url: { url: 'https://cdn.example/last-frame.png' } },
+  ]);
+});
+
+test('Ark adapter rejects local and excessive reference URLs', async () => {
+  const input = { apiKey: 'device-only-key', model: 'seedance-endpoint', prompt: 'test', ratio: '16:9', duration: 5 };
+  await assert.rejects(() => createGenerationTask({ ...input, referenceImages: ['blob:http://localhost/image'] }), (error) => error.status === 400 && /HTTPS/.test(error.message));
+  await assert.rejects(() => createGenerationTask({ ...input, referenceImages: ['https://a.test/1', 'https://a.test/2', 'https://a.test/3', 'https://a.test/4'] }), (error) => error.status === 400 && /最多附加 3 張/.test(error.message));
+});
+
 test('Ark adapter normalizes terminal task and video URL', () => {
   const task = normalizeGenerationTask({ id: 'cgt-test-002', model: 'seedance-endpoint', status: 'succeeded', content: { video_url: 'https://cdn.example/video.mp4', last_frame_url: 'https://cdn.example/frame.png' }, usage: { total_tokens: 42 } });
   assert.deepEqual(task, { id: 'cgt-test-002', model: 'seedance-endpoint', status: 'succeeded', videoUrl: 'https://cdn.example/video.mp4', lastFrameUrl: 'https://cdn.example/frame.png', error: null, requestId: '', usage: { total_tokens: 42 }, createdAt: null, updatedAt: null, seed: null, terminal: true });

@@ -1,5 +1,5 @@
 baseline:
-  id: BASELINE-20260802-003
+id: BASELINE-20260802-004
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -11,6 +11,9 @@ baseline:
     - "提示詞與影片 URL 的 v001、v002…版次歷史"
     - "生成逾時、重試退避、取消任務與失敗重試入口"
     - "工作流匯入的大小、節點類型、ID 與欄位驗證"
+    - "Reference 節點可輸入最多 3 個 Ark 可存取的 HTTPS 參考圖片"
+    - "本機圖片只提供預覽，不會偽裝成可公開 URL 送往 Ark"
+    - "完成版本保存尾幀並可回填為下一段的首幀參考"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
@@ -37,3 +40,4 @@ baseline:
     - ".agent/acceptance/CHANGE-001-acceptance.yaml"
     - ".agent/acceptance/CHANGE-002-acceptance.yaml"
     - ".agent/acceptance/CHANGE-003-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-004-acceptance.yaml"

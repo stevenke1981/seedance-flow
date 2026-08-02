@@ -46,6 +46,7 @@ let apiConfig = { apiKey: '', model: '' };
 let history = loadHistory();
 const pollTimers = new Map();
 const submitting = new Set();
+const assetPreviews = new Map();
 
 function loadWorkflow() {
   try {
@@ -78,6 +79,7 @@ function normalizeHistoryEntry(entry) {
     model: typeof entry.model === 'string' ? entry.model.slice(0, 200) : '',
     ratio: typeof entry.ratio === 'string' ? entry.ratio.slice(0, 20) : '16:9',
     duration: Number.isFinite(entry.duration) ? entry.duration : 30,
+    referenceImages: Array.isArray(entry.referenceImages) ? entry.referenceImages.filter((url) => typeof url === 'string').slice(0, 3) : [],
     status,
     taskId: typeof entry.taskId === 'string' ? entry.taskId.slice(0, 200) : '',
     videoUrl: typeof entry.videoUrl === 'string' ? entry.videoUrl.slice(0, 2048) : '',
@@ -203,6 +205,31 @@ function renderEdges() {
   });
 }
 
+function clearAssetPreview(nodeId) {
+  const preview = assetPreviews.get(nodeId);
+  if (preview?.url) URL.revokeObjectURL(preview.url);
+  assetPreviews.delete(nodeId);
+}
+
+function renderAssetPreview(node) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'asset-preview';
+  const preview = assetPreviews.get(node.id);
+  if (!preview) {
+    wrapper.textContent = '本機檔案只作預覽；送出前仍需填寫 Ark 可存取的 HTTPS URL。';
+    return wrapper;
+  }
+  const image = document.createElement('img');
+  image.src = preview.url;
+  image.alt = `${preview.name} 本機預覽`;
+  image.loading = 'lazy';
+  wrapper.append(image);
+  const caption = document.createElement('span');
+  caption.textContent = `${preview.name} · ${(preview.size / 1024 / 1024).toFixed(2)} MB`;
+  wrapper.append(caption);
+  return wrapper;
+}
+
 function renderInspector() {
   const node = selectedNode();
   if (!node) {
@@ -248,6 +275,32 @@ function renderInspector() {
     field.append(input);
     inspectorForm.append(field);
   });
+  if (node.type === 'asset') {
+    const uploadField = document.createElement('label');
+    uploadField.className = 'field';
+    uploadField.innerHTML = '<span class="field-label"><span>本機預覽圖</span><span class="field-type">LOCAL ONLY</span></span>';
+    const upload = document.createElement('input');
+    upload.type = 'file';
+    upload.accept = 'image/png,image/jpeg,image/webp';
+    upload.addEventListener('change', () => {
+      const file = upload.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        announce('參考資產目前只接受圖片檔。', 'error');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        announce('本機預覽圖不可超過 10 MB。', 'error');
+        return;
+      }
+      clearAssetPreview(node.id);
+      assetPreviews.set(node.id, { name: file.name, size: file.size, url: URL.createObjectURL(file) });
+      renderInspector();
+      announce('本機預覽圖已載入；請另外填寫 HTTPS URL 才能送給 Ark。');
+    });
+    uploadField.append(upload);
+    inspectorForm.append(uploadField, renderAssetPreview(node));
+  }
 }
 
 function renderOutput() {
@@ -312,6 +365,20 @@ function renderHistory() {
       links.append(link);
       card.append(links);
     }
+    if (entry.referenceImages?.length) {
+      const refs = document.createElement('div');
+      refs.className = 'history-time';
+      refs.textContent = `參考圖片 ${entry.referenceImages.length} 張`;
+      card.append(refs);
+    }
+    if (entry.lastFrameUrl && /^https:\/\//i.test(entry.lastFrameUrl)) {
+      const frame = document.createElement('img');
+      frame.className = 'history-frame';
+      frame.src = entry.lastFrameUrl;
+      frame.alt = `${entry.version} 影片尾幀`;
+      frame.loading = 'lazy';
+      card.append(frame);
+    }
     const actions = document.createElement('div');
     actions.className = 'history-actions';
     if (['queued', 'running', 'cancelling'].includes(entry.status) && entry.taskId) {
@@ -331,6 +398,14 @@ function renderHistory() {
       retry.textContent = entry.status === 'succeeded' ? '再次生成' : '重試生成';
       retry.disabled = submitting.has(entry.id);
       actions.append(retry);
+    }
+    if (entry.lastFrameUrl && /^https:\/\//i.test(entry.lastFrameUrl)) {
+      const useFrame = document.createElement('button');
+      useFrame.type = 'button';
+      useFrame.className = 'button button-quiet history-action';
+      useFrame.dataset.useLastFrame = entry.id;
+      useFrame.textContent = '用尾幀建立下一段';
+      actions.append(useFrame);
     }
     if (actions.childElementCount) card.append(actions);
     versionHistory.append(card);
@@ -366,6 +441,22 @@ function generationSettings(sourceWorkflow = workflow) {
   const ratioText = sourceWorkflow.nodes.find((node) => node.type === 'output')?.values?.ratio || sourceWorkflow.ratio || '16:9';
   const durationText = sourceWorkflow.nodes.find((node) => node.type === 'output')?.values?.duration || sourceWorkflow.duration || 30;
   return { ratio: ratioText.match(/\d+:\d+/)?.[0] || '16:9', duration: Number(String(durationText).match(/\d+/)?.[0] || 30) };
+}
+
+function generationAssets(sourceWorkflow) {
+  const assetNodes = sourceWorkflow.nodes.filter((node) => node.type === 'asset');
+  const urls = [];
+  assetNodes.forEach((node) => {
+    const url = String(node.values?.referenceUrl || '').trim();
+    if (!url) throw new Error('參考資產節點缺少 HTTPS URL；本機檔案目前只作預覽，無法直接送給 Ark。');
+    try {
+      if (new URL(url).protocol !== 'https:') throw new Error('protocol');
+    } catch {
+      throw new Error('參考資產 URL 必須是 Ark 可存取的 HTTPS 連結。');
+    }
+    urls.push(url);
+  });
+  return [...new Set(urls)].slice(0, 3);
 }
 
 function apiHeaders() {
@@ -463,6 +554,7 @@ async function pollGeneration(entry) {
 
 function createGenerationEntry(workflowSnapshot, retryOf = '') {
   const settings = generationSettings(workflowSnapshot);
+  const referenceImages = generationAssets(workflowSnapshot);
   const prompt = buildPrompt(workflowSnapshot.nodes, workflowSnapshot).trim();
   return {
     id: globalThis.crypto?.randomUUID?.() || `local-${Date.now()}`,
@@ -472,6 +564,7 @@ function createGenerationEntry(workflowSnapshot, retryOf = '') {
     model: apiConfig.model,
     ratio: settings.ratio,
     duration: settings.duration,
+    referenceImages,
     status: 'queued',
     taskId: '',
     videoUrl: '',
@@ -499,7 +592,11 @@ async function submitGeneration(workflowInput, retryOf = '') {
     announce(`無法提交工作流：${error.message}`, 'error');
     return;
   }
-  const entry = createGenerationEntry(workflowSnapshot, retryOf);
+  let entry;
+  try { entry = createGenerationEntry(workflowSnapshot, retryOf); } catch (error) {
+    announce(`無法提交參考資產：${error.message}`, 'error');
+    return;
+  }
   if (retryOf) submitting.add(retryOf);
   history.unshift(entry);
   persistHistory();
@@ -507,7 +604,7 @@ async function submitGeneration(workflowInput, retryOf = '') {
   generateButton.disabled = true;
   announce(`${entry.version} 已送出，等待 Seedance 任務排隊。`);
   try {
-    const response = await fetch('/api/generations', { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ model: entry.model, prompt: entry.prompt, ratio: entry.ratio, duration: entry.duration }) });
+    const response = await fetch('/api/generations', { method: 'POST', headers: apiHeaders(), body: JSON.stringify({ model: entry.model, prompt: entry.prompt, ratio: entry.ratio, duration: entry.duration, referenceImages: entry.referenceImages }) });
     const created = await responseJson(response);
     entry.taskId = created.id;
     entry.status = created.status || 'queued';
@@ -567,6 +664,30 @@ function retryGeneration(entry) {
   submitGeneration(entry.workflow, entry.id);
 }
 
+function useLastFrame(entry) {
+  if (!entry.lastFrameUrl || !/^https:\/\//i.test(entry.lastFrameUrl)) {
+    announce(`${entry.version} 沒有可用的 HTTPS 尾幀。`, 'error');
+    return;
+  }
+  let assetNode = workflow.nodes.find((node) => node.type === 'asset');
+  if (!assetNode) {
+    assetNode = createNode('asset', workflow.nodes.length + 1);
+    assetNode.x = 650;
+    assetNode.y = 560;
+    workflow.nodes.push(assetNode);
+  }
+  clearAssetPreview(assetNode.id);
+  assetNode.values.role = '首幀參考';
+  assetNode.values.referenceUrl = entry.lastFrameUrl;
+  assetNode.values.notes = `來自 ${entry.version} 的影片尾幀，作為下一段首幀。`;
+  selectedId = assetNode.id;
+  renderCanvas();
+  renderInspector();
+  renderOutput();
+  persist();
+  announce(`${entry.version} 尾幀已填入 Reference 節點，可生成下一段。`);
+}
+
 function resumePendingGenerations() {
   if (!apiConfig.apiKey) return;
   history.filter((entry) => entry.taskId && ['queued', 'running'].includes(entry.status)).forEach((entry) => pollGeneration(entry));
@@ -610,6 +731,7 @@ function addNode(type) {
 function deleteSelected() {
   const node = selectedNode();
   if (!node) return;
+  clearAssetPreview(node.id);
   workflow.nodes = workflow.nodes.filter((item) => item.id !== node.id);
   selectedId = workflow.nodes.at(-1)?.id || null;
   renderCanvas();
@@ -656,6 +778,7 @@ function downloadPrompt() {
 }
 
 function resetWorkflow() {
+  assetPreviews.forEach((_preview, nodeId) => clearAssetPreview(nodeId));
   workflow = createDefaultWorkflow();
   selectedId = workflow.nodes[0]?.id || null;
   renderAll();
@@ -742,12 +865,14 @@ $('#generate-video').addEventListener('click', generateVideo);
 versionHistory.addEventListener('click', (event) => {
   const cancelButton = event.target.closest('[data-cancel-history]');
   const retryButton = event.target.closest('[data-retry-history]');
-  const entryId = cancelButton?.dataset.cancelHistory || retryButton?.dataset.retryHistory;
+  const frameButton = event.target.closest('[data-use-last-frame]');
+  const entryId = cancelButton?.dataset.cancelHistory || retryButton?.dataset.retryHistory || frameButton?.dataset.useLastFrame;
   if (!entryId) return;
   const entry = history.find((item) => item.id === entryId);
   if (!entry) return;
   if (cancelButton) cancelGeneration(entry);
   if (retryButton) retryGeneration(entry);
+  if (frameButton) useLastFrame(entry);
 });
 $('#open-api-panel').addEventListener('click', showApiModal);
 $('#close-api-panel').addEventListener('click', hideApiModal);

@@ -19,6 +19,13 @@ test('prompt output contains Seedance structure and four beats', () => {
   assert.doesNotMatch(prompt, /undefined|null/);
 });
 
+test('prompt output includes reference asset role and URL', () => {
+  const workflow = createDefaultWorkflow();
+  workflow.nodes.push({ id: 'asset-test-1', type: 'asset', values: { role: '首幀參考', referenceUrl: 'https://cdn.example/start.png', notes: '保持構圖' } });
+  const prompt = buildPrompt(workflow.nodes, workflow);
+  assert.match(prompt, /首幀參考：https:\/\/cdn\.example\/start\.png/);
+});
+
 test('workflow serialization round-trips without losing node fields', () => {
   const workflow = createDefaultWorkflow();
   workflow.nodes[0].values.subject = '一台在海邊巡航的橘色機器人';
