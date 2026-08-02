@@ -1,0 +1,22 @@
+acceptance:
+  id: CHANGE-009
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 12 JavaScript modules"
+    - "npm test（moviedesign）：32 tests passed"
+    - "npm run build（moviedesign）：dist 建立成功"
+    - "npm run release:check：輸出 READY，9 個核心產物含 bytes 與 SHA-256；未設定正式環境時 preflight 明確輸出 NOT_READY"
+    - "npm run release:check:strict：以 HTTPS upstream、HTTPS origin、0.0.0.0、requireOrigin=true 與 rate limit 設定輸出 READY，exit 0"
+    - "history-filter 單元測試覆蓋版次／提示詞／模型／task／request／error message／error code 搜尋、狀態篩選、順序與 malformed input"
+    - "agent-browser 桌面驗收：搜尋 rainy 顯示 2 / 3 個版本；status=succeeded 顯示 1 / 3 個版本；清除篩選恢復 3 / 3"
+    - "agent-browser 空結果驗收：不存在的 query 顯示 0 / 3 與『沒有符合條件的影片版本』"
+    - "agent-browser 390x844 驗收：文件寬度與 clientWidth 均為 390px，無水平溢位"
+    - "上層 E:\\hanzi-translate lint、build、test gates 維持通過"
+  manual_notes:
+    - "MANUAL_REQUIRED：尚未把 bridge 部署到正式雲端，也未使用正式 Ark Key 進行付費真實生成；正式費用／配額仍需專案負責人確認"

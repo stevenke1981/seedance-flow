@@ -33,6 +33,7 @@
 16. API bridge 支援 HTTPS Origin allowlist、Origin 強制檢查、每分鐘請求上限與可配置 bind host；`preflight:strict` 必須在正式部署前通過。
 17. 第 2 階段 release check 必須驗證 `dist/` 核心產物存在並輸出 SHA-256 manifest；strict 模式同時要求 production preflight 通過，不得包含真實憑證。
 18. 第 3 階段版本歷史可匯出／匯入 `schemaVersion=1`、`kind=seedance-flow-history` 的 JSON archive；匯入必須限制最多 40 筆、依 ID 去重，且 archive 不得包含 API Key。
+19. 第 4 階段版本歷史提供不分大小寫的版次／提示詞／模型／任務摘要搜尋與狀態篩選，顯示結果計數與空結果提示；篩選只影響目前畫面，不改變 history schema 或 localStorage。
 
 ## 內容對齊方向
 
@@ -58,6 +59,7 @@
 - 任務可在 queued／running 狀態取消；failed／cancelled／expired／succeeded 版本提供再次生成入口。
 - Reference 節點的本機預覽、HTTPS URL 驗證、`image_url` payload 與尾幀接續可在隔離 mock provider 中完成驗收。
 - 用量護欄可在本機阻擋超出上限的任務，並在送出前顯示費用不確定性與當日用量；限制設定只留在瀏覽器本機。
+- 版本歷史搜尋可依版次、提示詞或模型縮小結果，狀態下拉選單可篩選成功／失敗／進行中版本，並在無符合項目時顯示空結果提示與目前結果計數。
 - bridge 安全邊界可用 mock request 驗證：不允許的 Origin 得到 403，超過速率得到 429 與 Retry-After，允許來源得到 CORS header。
 - release check 可在沒有雲端帳號的本機環境先驗證發布產物與設定，不宣稱已完成正式部署。
 - 版本 archive 可在本機下載與重新匯入，格式錯誤或超過上限時顯示可理解錯誤；跨裝置同步服務仍不在範圍內。

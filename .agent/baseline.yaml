@@ -1,5 +1,5 @@
 baseline:
-id: BASELINE-20260802-008
+  id: BASELINE-20260802-009
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -24,6 +24,8 @@ id: BASELINE-20260802-008
     - ".env.example 提供平台無關設定模板且不含任何秘密"
     - "影片版本可匯出為 schemaVersion=1 的本機 JSON archive，也可驗證後匯入"
     - "版本 archive 使用欄位白名單排除 API Key，限制 40 筆／2 MB 並依 id 去重合併"
+    - "版本歷史可依版次、提示詞、模型、task／request／error 摘要搜尋"
+    - "版本歷史可依 queued／running／succeeded／failed 等狀態篩選，顯示結果計數與空結果訊息"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
@@ -58,3 +60,4 @@ id: BASELINE-20260802-008
     - ".agent/acceptance/CHANGE-006-acceptance.yaml"
     - ".agent/acceptance/CHANGE-007-acceptance.yaml"
     - ".agent/acceptance/CHANGE-008-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-009-acceptance.yaml"

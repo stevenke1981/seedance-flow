@@ -56,3 +56,8 @@ plan:
       output: "可攜式版本歷史 JSON archive、匯出／匯入 UI、格式驗證與合併策略"
       verify: "archive 單元測試、lint/build、瀏覽器下載與匯入錯誤流程"
       status: completed
+    - id: T12
+      task: "完成第 4 階段版本歷史搜尋與狀態篩選"
+      output: "本機版次搜尋框、狀態篩選、空結果提示與純函式測試"
+      verify: "history-filter tests、lint/build、瀏覽器搜尋與 status select 操作"
+      status: completed

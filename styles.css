@@ -138,6 +138,14 @@ h2 { font-size: 14px; letter-spacing: -.01em; }
 .history-heading-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
 .history-tool { min-height: 26px; padding: 4px 7px; font-size: 9px; }
 .history-note { margin: 10px 0 12px; color: var(--dim); font-size: 10px; line-height: 1.5; }
+.history-filters { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin: 10px 0 5px; }
+.history-filter-field { min-width: 0; }
+.history-filter-input, .history-filter-select { width: 100%; min-height: 30px; box-sizing: border-box; border: 1px solid var(--line); border-radius: 0; padding: 7px 8px; color: var(--ink); background: rgba(5, 9, 10, .28); font-size: 10px; }
+.history-filter-input::placeholder { color: #55605d; }
+.history-filter-input:hover, .history-filter-select:hover { border-color: var(--line-strong); }
+.history-filter-select { min-width: 92px; }
+.history-result-count { min-height: 15px; color: var(--dim); font-size: 9px; line-height: 1.5; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .version-history { display: grid; gap: 8px; }
 .empty-history { color: var(--dim); font-size: 10px; line-height: 1.5; }
 .history-item { padding: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }

@@ -13,6 +13,7 @@ export const REQUIRED_RELEASE_FILES = Object.freeze([
   'dist/src/generation-policy.mjs',
   'dist/src/bridge-policy.mjs',
   'dist/src/history-archive.mjs',
+  'dist/src/history-filter.mjs',
 ]);
 
 async function artifactInfo(root, relativePath) {

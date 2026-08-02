@@ -23,6 +23,7 @@ import {
   sanitizeHistoryEntry,
   serializeHistoryArchive,
 } from './history-archive.mjs';
+import { filterHistory } from './history-filter.mjs';
 
 const HISTORY_KEY = 'seedance-flow-history-v1';
 const STATUS_LABELS = { queued: '排隊中', running: '生成中', cancelling: '取消中', succeeded: '已完成', failed: '失敗', expired: '已過期', cancelled: '已取消' };
@@ -63,6 +64,7 @@ let saveTimer;
 let apiConfig = { apiKey: '', model: '' };
 let generationPolicy = loadGenerationPolicy();
 let history = loadHistory();
+let historyFilter = { query: '', status: 'all' };
 const pollTimers = new Map();
 const pollingGenerations = new Map();
 const submitting = new Set();
@@ -359,12 +361,19 @@ function renderOutput() {
 
 function renderHistory() {
   historyCount.textContent = String(history.length).padStart(2, '0');
+  const visibleHistory = filterHistory(history, historyFilter);
+  const resultCount = $('#history-result-count');
+  resultCount.textContent = history.length ? `顯示 ${visibleHistory.length} / ${history.length} 個版本` : '';
   versionHistory.replaceChildren();
   if (!history.length) {
     versionHistory.innerHTML = '<div class="empty-history">尚未提交影片生成任務。</div>';
     return;
   }
-  history.forEach((entry) => {
+  if (!visibleHistory.length) {
+    versionHistory.innerHTML = '<div class="empty-history">沒有符合條件的影片版本。</div>';
+    return;
+  }
+  visibleHistory.forEach((entry) => {
     const card = document.createElement('article');
     const statusClass = entry.status === 'failed' ? 'is-failed' : (entry.status === 'queued' || entry.status === 'running' || entry.status === 'cancelling' ? 'is-running' : '');
     card.className = `history-item ${statusClass}`;
@@ -1003,6 +1012,14 @@ $('#export-workflow').addEventListener('click', exportWorkflow);
 $('#export-history').addEventListener('click', exportHistory);
 $('#import-history').addEventListener('click', importHistory);
 $('#import-history-file').addEventListener('change', (event) => { handleHistoryImport(event.target.files?.[0]); });
+$('#history-search').addEventListener('input', (event) => {
+  historyFilter.query = event.target.value;
+  renderHistory();
+});
+$('#history-status-filter').addEventListener('change', (event) => {
+  historyFilter.status = event.target.value;
+  renderHistory();
+});
 $('#reset-workflow').addEventListener('click', resetWorkflow);
 $('#generate-video').addEventListener('click', generateVideo);
 versionHistory.addEventListener('click', (event) => {

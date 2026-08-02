@@ -1,0 +1,18 @@
+change:
+  id: CHANGE-009
+  title: "完成第 4 階段版本歷史搜尋與狀態篩選"
+  classification: feature
+  risk: LOW
+  scope: "本機版本歷史 query、status filter、結果計數與空結果狀態"
+  impact:
+    modules:
+      - "src/history-filter.mjs / test/history-filter.test.mjs"
+      - "src/app.js / index.html / styles.css"
+      - "scripts/lint.mjs / scripts/release-check.mjs / README.md / SPEC.md"
+    protected_flows:
+      - "既有版本歷史匯出／匯入、播放、取消、重試與尾幀接續"
+      - "history localStorage schema 與 API Key 邊界"
+      - "空歷史與重新整理後的版次還原"
+    public_contract: "搜尋只作用於目前瀏覽器記憶體中的 history，不改變 archive schema 或 localStorage key"
+  rollback: "回復 CHANGE-009 相關檔案即可；不涉及資料格式、外部 API 或正式資料"
+  external_gate: "正式部署、雲端同步與真實 Ark 費用／配額仍不在本階段"
