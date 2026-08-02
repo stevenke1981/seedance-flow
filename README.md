@@ -65,6 +65,8 @@ npm run dev
 
 `npm run preflight` 會列出目前設定是否就緒；`preflight:strict` 在條件不足時以失敗結束。rate limit 是單一 bridge process 的記憶體護欄，正式多執行個體部署仍需平台層級限流與正式監控。
 
+第 2 階段的 `release:check` 會檢查 `dist/` 是否包含完整可發布產物並輸出每個檔案的 SHA-256；`release:check:strict` 會再要求 production preflight 通過。`.env.example` 只提供設定名稱與範例，不含任何憑證。
+
 ## 目前範圍
 
 - 已完成：節點新增／選取／拖曳／刪除、Inspector 欄位、四拍提示預覽、複製 fallback、TXT 與 JSON 匯出、本地還原、響應式版面。

@@ -1,0 +1,20 @@
+acceptance:
+  id: CHANGE-007
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 10 JavaScript modules"
+    - "npm test（moviedesign）：26 tests passed"
+    - "npm run build（moviedesign）：dist 核心產物建立成功"
+    - "npm run release:check：輸出 READY，7 個核心產物含 bytes 與 SHA-256；未設定正式環境時 preflight 明確輸出 NOT_READY"
+    - "npm run release:check:strict：以 HTTPS upstream、HTTPS origin、0.0.0.0、requireOrigin=true 與 rate limit 設定輸出 READY，exit 0"
+    - "release-check 測試：完整暫存產物通過 strict 與 SHA-256 驗證；缺少產物時 strict 失敗"
+    - ".env.example 僅含安全 placeholder，不含 API Key、Cloudflare token 或 AdSense credential"
+    - "上層 E:\\hanzi-translate 的 lint、build、test gates 維持通過"
+  manual_notes:
+    - "MANUAL_REQUIRED：尚未把 bridge 部署到正式雲端，也未使用正式 Ark Key 進行付費真實生成；本階段只提供平台無關的發布檢查與環境模板"

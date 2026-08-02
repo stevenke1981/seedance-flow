@@ -31,6 +31,7 @@
 14. 送出影片前使用本機用量護欄：單次時長、每日任務數、每日總秒數可限制；可要求每次付費請求前確認。護欄不得聲稱可估算供應商美元費用。
 15. `/api/health` 回報 upstream 模式與部署相關 limits，不回傳 API Key 或其他敏感資訊。
 16. API bridge 支援 HTTPS Origin allowlist、Origin 強制檢查、每分鐘請求上限與可配置 bind host；`preflight:strict` 必須在正式部署前通過。
+17. 第 2 階段 release check 必須驗證 `dist/` 核心產物存在並輸出 SHA-256 manifest；strict 模式同時要求 production preflight 通過，不得包含真實憑證。
 
 ## 內容對齊方向
 
@@ -57,4 +58,5 @@
 - Reference 節點的本機預覽、HTTPS URL 驗證、`image_url` payload 與尾幀接續可在隔離 mock provider 中完成驗收。
 - 用量護欄可在本機阻擋超出上限的任務，並在送出前顯示費用不確定性與當日用量；限制設定只留在瀏覽器本機。
 - bridge 安全邊界可用 mock request 驗證：不允許的 Origin 得到 403，超過速率得到 429 與 Retry-After，允許來源得到 CORS header。
+- release check 可在沒有雲端帳號的本機環境先驗證發布產物與設定，不宣稱已完成正式部署。
 - 真實火山引擎生成需以主人提供的有效 Key、模型／Endpoint ID 及費用確認進行；沒有這些條件時標示 `MANUAL_REQUIRED`，不得宣稱已生成影片。

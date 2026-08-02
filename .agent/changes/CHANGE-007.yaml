@@ -1,0 +1,18 @@
+change:
+  id: CHANGE-007
+  title: "完成第 2 階段可發布驗證與部署包裝"
+  classification: hardening
+  risk: MEDIUM
+  scope: "release check、dist 產物 SHA-256 manifest、.env.example 與 strict preflight gate"
+  impact:
+    modules:
+      - "scripts/release-check.mjs / test/release-check.test.mjs"
+      - "package.json / scripts/lint.mjs"
+      - "README.md / SPEC.md / .env.example"
+    protected_flows:
+      - "既有節點工作台、生成歷史、版本與 localStorage 行為"
+      - "上層譯匠主站與 .openai/hosting.json"
+      - "API Key 不落盤、不進產物 manifest 或 .env.example"
+    public_contract: "release:check 產生可追溯 artifact manifest；release:check:strict 要求 production bridge preflight READY"
+  rollback: "回復 CHANGE-007 相關檔案即可；不涉及資料庫、使用者資料或正式部署狀態"
+  external_gate: "正式部署仍需專案負責人選定平台、DNS、TLS、監控與正式 Ark 認證及費用／配額"

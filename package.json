@@ -8,6 +8,8 @@
     "dev": "node scripts/dev-server.mjs",
     "preflight": "node scripts/preflight.mjs",
     "preflight:strict": "node scripts/preflight.mjs --strict",
+    "release:check": "node scripts/release-check.mjs",
+    "release:check:strict": "node scripts/release-check.mjs --strict",
     "build": "node scripts/build.mjs",
     "lint": "node scripts/lint.mjs",
     "test": "node --test test/*.test.mjs"
