@@ -1,0 +1,20 @@
+acceptance:
+  id: CHANGE-006
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 9 JavaScript modules"
+    - "npm test（moviedesign）：24 tests passed"
+    - "npm run build（moviedesign）：dist 產物建立成功"
+    - "npm run preflight：未設定正式環境時輸出 NOT_READY 與具體缺項"
+    - "npm run preflight:strict：以 HTTPS upstream、HTTPS origin、0.0.0.0、requireOrigin=true 設定輸出 READY"
+    - "本機 dev server + agent-browser：頁面正常載入，GET /api/health 顯示 limits 與 security，不含金鑰"
+    - "API 整合測試：不允許 Origin 回 403；rate limit 回 429／Retry-After；允許來源回 CORS header"
+    - "預設 localhost bridge 維持同源 API 可用"
+  manual_notes:
+    - "MANUAL_REQUIRED：尚未把 bridge 部署到正式雲端，也未使用正式 Ark Key 進行付費真實生成"

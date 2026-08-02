@@ -41,3 +41,8 @@ plan:
       output: "送出前費用確認、每日任務／秒數上限、可追溯護欄快照與 health limits"
       verify: "policy 單元測試、health 整合測試、瀏覽器實際設定與送出前確認"
       status: completed
+    - id: T9
+      task: "加入 API bridge 的 production preflight 與 Origin／rate limit 邊界"
+      output: "可配置 bind host、HTTPS allowlist、Origin 強制檢查、每分鐘限流與 strict preflight"
+      verify: "bridge policy tests、API 403／429／CORS 整合測試、preflight strict ready/not-ready"
+      status: completed

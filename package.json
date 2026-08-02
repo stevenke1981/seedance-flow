@@ -6,6 +6,8 @@
   "description": "Seedance Flow：在瀏覽器本地執行的 Seedance 2.5／即夢多拍影片提示詞工作台（無外部執行期依賴）",
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "preflight:strict": "node scripts/preflight.mjs --strict",
     "build": "node scripts/build.mjs",
     "lint": "node scripts/lint.mjs",
     "test": "node --test test/*.test.mjs"

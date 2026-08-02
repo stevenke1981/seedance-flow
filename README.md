@@ -49,6 +49,22 @@ npm run build
 
 本機 API bridge 的 `GET /api/health` 會回報目前 upstream 模式與 body、timeout、影片時長、參考圖片數量上限，方便部署前檢查；這不代表已完成正式部署或真實 Ark 驗收。
 
+### API bridge 部署前檢查
+
+正式環境至少要明確設定 upstream、HTTPS Origin allowlist、非 localhost bind host、Origin 強制檢查與 rate limit：
+
+```powershell
+$env:SEEDANCE_API_BASE_URL = "https://ark.example.com/api/v3"
+$env:SEEDANCE_ALLOWED_ORIGINS = "https://your-app.example"
+$env:SEEDANCE_BIND_HOST = "0.0.0.0"
+$env:SEEDANCE_REQUIRE_ORIGIN = "true"
+$env:SEEDANCE_RATE_LIMIT_PER_MINUTE = "60"
+npm run preflight:strict
+npm run dev
+```
+
+`npm run preflight` 會列出目前設定是否就緒；`preflight:strict` 在條件不足時以失敗結束。rate limit 是單一 bridge process 的記憶體護欄，正式多執行個體部署仍需平台層級限流與正式監控。
+
 ## 目前範圍
 
 - 已完成：節點新增／選取／拖曳／刪除、Inspector 欄位、四拍提示預覽、複製 fallback、TXT 與 JSON 匯出、本地還原、響應式版面。

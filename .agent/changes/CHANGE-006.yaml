@@ -1,0 +1,19 @@
+change:
+  id: CHANGE-006
+  title: "加入 API bridge production preflight 與來源／速率邊界"
+  classification: hardening
+  risk: MEDIUM
+  scope: "bridge host binding、Origin allowlist、CORS、per-process rate limit 與 strict preflight"
+  impact:
+    modules:
+      - "src/bridge-policy.mjs"
+      - "scripts/api-server.mjs / scripts/dev-server.mjs / scripts/preflight.mjs"
+      - "package.json / README.md / SPEC.md"
+      - "test/bridge-policy.test.mjs / test/ark-adapter.test.mjs"
+    protected_flows:
+      - "預設 localhost 開發流程維持可用"
+      - "API Key 不落盤、不回傳、不進健康檢查"
+      - "既有生成、取消、輪詢與版本歷史"
+    public_contract: "GET /api/health 新增 security；跨來源 API 受 allowlist、Origin 與 rate limit 控制"
+  rollback: "回復 CHANGE-006 相關檔案即可；既有本機預設設定不需資料遷移"
+  external_gate: "正式部署仍需主人選定平台、DNS、TLS、監控與正式 Ark 認證"

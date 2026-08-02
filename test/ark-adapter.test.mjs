@@ -78,8 +78,50 @@ test('local API health reports deployment limits without secrets', async () => {
     mode: 'custom-upstream',
     baseUrl: 'https://ark.example.test/api/v3',
     limits: { maxBodyBytes: 1_048_576, requestTimeoutMs: 12_000, maxDurationSeconds: 180, maxReferenceImages: 3 },
+    security: { originPolicy: 'same-origin-default', allowedOriginCount: 0, rateLimitPerMinute: 60, trustProxy: false },
   });
   assert.doesNotMatch(responseBody, /api-key|secret|authorization/i);
+});
+
+test('API bridge enforces origin allowlist and rate limit with CORS headers', async () => {
+  const calls = [];
+  const handleApi = createApiHandler({
+    baseUrl: 'https://ark.example.test/api/v3',
+    bridgeConfig: { allowedOrigins: ['https://app.example'], invalidOrigins: [], rateLimitPerMinute: 1, requireOrigin: true, trustProxy: false },
+    fetchImpl: async (url, options) => { calls.push({ url, options }); return responseJson({ id: 'cgt-policy-001' }); },
+  });
+  const forbidden = Readable.from([Buffer.from('{}')]);
+  forbidden.method = 'POST';
+  forbidden.headers = { origin: 'https://evil.example', 'x-ark-api-key': 'device-only-key' };
+  let forbiddenStatus = 0;
+  let forbiddenBody = '';
+  await handleApi(forbidden, { writeHead(status) { forbiddenStatus = status; }, end(body) { forbiddenBody = body; } }, '/api/generations');
+  assert.equal(forbiddenStatus, 403);
+  assert.equal(JSON.parse(forbiddenBody).error.code, 'ORIGIN_NOT_ALLOWED');
+
+  const allowed = () => {
+    const request = Readable.from([Buffer.from(JSON.stringify({ model: 'seedance-endpoint', prompt: 'test', ratio: '16:9', duration: 5 }))]);
+    request.method = 'POST';
+    request.headers = { origin: 'https://app.example', 'x-ark-api-key': 'device-only-key' };
+    request.socket = { remoteAddress: 'client-1' };
+    return request;
+  };
+  let firstHeaders = {};
+  let firstStatus = 0;
+  await handleApi(allowed(), { writeHead(status, headers) { firstStatus = status; firstHeaders = headers; }, end() {} }, '/api/generations');
+  assert.equal(firstStatus, 202);
+  assert.equal(firstHeaders['Access-Control-Allow-Origin'], 'https://app.example');
+  let optionsStatus = 0;
+  let optionsHeaders = {};
+  await handleApi({ method: 'OPTIONS', headers: { origin: 'https://app.example' } }, { writeHead(status, headers) { optionsStatus = status; optionsHeaders = headers; }, end() {} }, '/api/generations');
+  assert.equal(optionsStatus, 204);
+  assert.equal(optionsHeaders['Access-Control-Allow-Methods'], 'GET,POST,DELETE,OPTIONS');
+  let limitedStatus = 0;
+  let limitedBody = '';
+  await handleApi(allowed(), { writeHead(status) { limitedStatus = status; }, end(body) { limitedBody = body; } }, '/api/generations');
+  assert.equal(limitedStatus, 429);
+  assert.equal(JSON.parse(limitedBody).error.code, 'BRIDGE_RATE_LIMIT');
+  assert.equal(calls.length, 1);
 });
 
 test('local API proxy returns structured validation errors and supports cancellation', async () => {

@@ -6,6 +6,7 @@ import { createApiHandler } from './api-server.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const port = Number(process.env.PORT || 4173);
+const host = String(process.env.SEEDANCE_BIND_HOST || '127.0.0.1').trim() || '127.0.0.1';
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
 const handleApi = createApiHandler();
 
@@ -34,4 +35,4 @@ const server = createServer(async (request, response) => {
 });
 
 server.on('error', (error) => { console.error(error); process.exitCode = 1; });
-server.listen(port, '127.0.0.1', () => console.log(`Seedance Flow dev server: http://127.0.0.1:${port}`));
+server.listen(port, host, () => console.log(`Seedance Flow dev server: http://${host}:${port}`));

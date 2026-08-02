@@ -1,5 +1,5 @@
 baseline:
-id: BASELINE-20260802-005
+id: BASELINE-20260802-006
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -17,6 +17,8 @@ id: BASELINE-20260802-005
     - "本機用量護欄可限制單次時長、每日任務數與每日總秒數"
     - "送出前可要求費用不確定性與當日用量確認，歷史保存護欄快照"
     - "API health 回報 upstream 模式與部署 limits，不暴露金鑰"
+    - "API bridge 支援 HTTPS Origin allowlist、Origin 強制檢查與每分鐘速率限制"
+    - "production preflight 可阻擋未設定 upstream、bind host、Origin 與 HTTPS allowlist 的部署"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
@@ -46,3 +48,4 @@ id: BASELINE-20260802-005
     - ".agent/acceptance/CHANGE-003-acceptance.yaml"
     - ".agent/acceptance/CHANGE-004-acceptance.yaml"
     - ".agent/acceptance/CHANGE-005-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-006-acceptance.yaml"
