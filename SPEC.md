@@ -28,6 +28,8 @@
 11. API 錯誤使用結構化 code、request ID 與 retryable 欄位；工作流輸入拒絕過大 JSON、未知節點類型、重複 ID 與超長欄位。
 12. `Reference` 節點支援用途、HTTPS 參考圖 URL 與備註；生成時最多送出 3 個 `image_url` content。瀏覽器本機檔案只提供預覽，不能直接送往 Ark。
 13. 成功生成若回傳 `last_frame_url`，版本歷史需顯示尾幀，並提供將其回填成下一段「首幀參考」的操作。
+14. 送出影片前使用本機用量護欄：單次時長、每日任務數、每日總秒數可限制；可要求每次付費請求前確認。護欄不得聲稱可估算供應商美元費用。
+15. `/api/health` 回報 upstream 模式與部署相關 limits，不回傳 API Key 或其他敏感資訊。
 
 ## 內容對齊方向
 
@@ -52,4 +54,5 @@
 - API 代理健康檢查可用；缺少 Key、模型或無效參數回傳 4xx；上游錯誤保留安全的錯誤摘要，不回傳金鑰。
 - 任務可在 queued／running 狀態取消；failed／cancelled／expired／succeeded 版本提供再次生成入口。
 - Reference 節點的本機預覽、HTTPS URL 驗證、`image_url` payload 與尾幀接續可在隔離 mock provider 中完成驗收。
+- 用量護欄可在本機阻擋超出上限的任務，並在送出前顯示費用不確定性與當日用量；限制設定只留在瀏覽器本機。
 - 真實火山引擎生成需以主人提供的有效 Key、模型／Endpoint ID 及費用確認進行；沒有這些條件時標示 `MANUAL_REQUIRED`，不得宣稱已生成影片。

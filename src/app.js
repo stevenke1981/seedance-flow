@@ -9,6 +9,13 @@ import {
   parseWorkflow,
   serializeWorkflow,
 } from './prompt-engine.mjs';
+import {
+  DEFAULT_GENERATION_POLICY,
+  POLICY_STORAGE_KEY,
+  evaluateGenerationPolicy,
+  normalizeGenerationPolicy,
+  summarizeDailyUsage,
+} from './generation-policy.mjs';
 
 const HISTORY_KEY = 'seedance-flow-history-v1';
 const STATUS_LABELS = { queued: '排隊中', running: '生成中', cancelling: '取消中', succeeded: '已完成', failed: '失敗', expired: '已過期', cancelled: '已取消' };
@@ -33,6 +40,10 @@ const viewport = $('#canvas-viewport');
 const apiModal = $('#api-modal');
 const apiKeyInput = $('#ark-api-key');
 const modelInput = $('#ark-model');
+const policyMaxDurationInput = $('#policy-max-duration');
+const policyDailyTasksInput = $('#policy-daily-tasks');
+const policyDailyDurationInput = $('#policy-daily-duration');
+const policyConfirmationInput = $('#policy-confirmation');
 const versionHistory = $('#version-history');
 const historyCount = $('#history-count');
 const generateButton = $('#generate-video');
@@ -43,6 +54,7 @@ let zoom = 1;
 let dragState = null;
 let saveTimer;
 let apiConfig = { apiKey: '', model: '' };
+let generationPolicy = loadGenerationPolicy();
 let history = loadHistory();
 const pollTimers = new Map();
 const submitting = new Set();
@@ -66,6 +78,32 @@ function loadHistory() {
   } catch {
     return [];
   }
+}
+
+function loadGenerationPolicy() {
+  try {
+    const raw = localStorage.getItem(POLICY_STORAGE_KEY);
+    return normalizeGenerationPolicy(raw ? JSON.parse(raw) : DEFAULT_GENERATION_POLICY);
+  } catch {
+    return normalizeGenerationPolicy(DEFAULT_GENERATION_POLICY);
+  }
+}
+
+function persistGenerationPolicy() {
+  try { localStorage.setItem(POLICY_STORAGE_KEY, JSON.stringify(generationPolicy)); } catch { announce('用量護欄無法寫入本機儲存。', 'error'); }
+}
+
+function normalizeGuardrailSnapshot(value) {
+  if (!value || typeof value !== 'object') return null;
+  const usage = value.usageBefore && typeof value.usageBefore === 'object' ? value.usageBefore : {};
+  return {
+    policy: normalizeGenerationPolicy(value.policy),
+    usageBefore: {
+      date: typeof usage.date === 'string' ? usage.date.slice(0, 16) : '',
+      taskCount: Number.isFinite(usage.taskCount) ? Math.max(0, Math.round(usage.taskCount)) : 0,
+      durationSeconds: Number.isFinite(usage.durationSeconds) ? Math.max(0, Math.round(usage.durationSeconds)) : 0,
+    },
+  };
 }
 
 function normalizeHistoryEntry(entry) {
@@ -93,6 +131,7 @@ function normalizeHistoryEntry(entry) {
     pollRetries: Number.isFinite(entry.pollRetries) ? Math.max(0, Math.min(MAX_POLL_RETRIES, entry.pollRetries)) : 0,
     retryOf: typeof entry.retryOf === 'string' ? entry.retryOf.slice(0, 32) : '',
     usage: entry.usage && typeof entry.usage === 'object' ? entry.usage : null,
+    guardrail: normalizeGuardrailSnapshot(entry.guardrail),
     workflow: entry.workflow && typeof entry.workflow === 'object' ? entry.workflow : null,
   };
 }
@@ -371,6 +410,12 @@ function renderHistory() {
       refs.textContent = `參考圖片 ${entry.referenceImages.length} 張`;
       card.append(refs);
     }
+    if (entry.guardrail?.usageBefore && entry.guardrail.policy) {
+      const guardrail = document.createElement('div');
+      guardrail.className = 'history-time';
+      guardrail.textContent = `送出前用量：${entry.guardrail.usageBefore.taskCount}/${entry.guardrail.policy.dailyTaskLimit} 次 · ${entry.guardrail.usageBefore.durationSeconds}/${entry.guardrail.policy.dailyDurationLimitSeconds} 秒`;
+      card.append(guardrail);
+    }
     if (entry.lastFrameUrl && /^https:\/\//i.test(entry.lastFrameUrl)) {
       const frame = document.createElement('img');
       frame.className = 'history-frame';
@@ -415,6 +460,10 @@ function renderHistory() {
 function showApiModal() {
   apiKeyInput.value = apiConfig.apiKey;
   modelInput.value = apiConfig.model;
+  policyMaxDurationInput.value = String(generationPolicy.maxDurationSeconds);
+  policyDailyTasksInput.value = String(generationPolicy.dailyTaskLimit);
+  policyDailyDurationInput.value = String(generationPolicy.dailyDurationLimitSeconds);
+  policyConfirmationInput.checked = generationPolicy.requireConfirmation;
   apiModal.hidden = false;
   window.setTimeout(() => (apiConfig.apiKey ? modelInput : apiKeyInput).focus(), 0);
 }
@@ -425,6 +474,13 @@ function hideApiModal() {
 
 function saveApiConfig() {
   apiConfig = { apiKey: apiKeyInput.value.trim(), model: modelInput.value.trim() };
+  generationPolicy = normalizeGenerationPolicy({
+    maxDurationSeconds: policyMaxDurationInput.value,
+    dailyTaskLimit: policyDailyTasksInput.value,
+    dailyDurationLimitSeconds: policyDailyDurationInput.value,
+    requireConfirmation: policyConfirmationInput.checked,
+  });
+  persistGenerationPolicy();
   hideApiModal();
   announce(apiConfig.apiKey && apiConfig.model ? 'API 設定已保留於目前分頁記憶體。' : '請同時填寫 API Key 與模型 ID。', apiConfig.apiKey && apiConfig.model ? 'success' : 'error');
   resumePendingGenerations();
@@ -556,6 +612,7 @@ function createGenerationEntry(workflowSnapshot, retryOf = '') {
   const settings = generationSettings(workflowSnapshot);
   const referenceImages = generationAssets(workflowSnapshot);
   const prompt = buildPrompt(workflowSnapshot.nodes, workflowSnapshot).trim();
+  const usageBefore = summarizeDailyUsage(history);
   return {
     id: globalThis.crypto?.randomUUID?.() || `local-${Date.now()}`,
     version: nextVersion(),
@@ -576,6 +633,7 @@ function createGenerationEntry(workflowSnapshot, retryOf = '') {
     pollStartedAt: '',
     pollRetries: 0,
     retryOf,
+    guardrail: { policy: generationPolicy, usageBefore },
     workflow: JSON.parse(JSON.stringify(workflowSnapshot)),
   };
 }
@@ -595,6 +653,15 @@ async function submitGeneration(workflowInput, retryOf = '') {
   let entry;
   try { entry = createGenerationEntry(workflowSnapshot, retryOf); } catch (error) {
     announce(`無法提交參考資產：${error.message}`, 'error');
+    return;
+  }
+  const policyCheck = evaluateGenerationPolicy({ entry, history, policy: generationPolicy });
+  if (!policyCheck.ok) {
+    announce(`用量護欄：${policyCheck.message}`, 'error');
+    return;
+  }
+  if (policyCheck.requiresConfirmation && !window.confirm(policyCheck.confirmationMessage)) {
+    announce(`${entry.version} 已取消送出。`, 'error');
     return;
   }
   if (retryOf) submitting.add(retryOf);

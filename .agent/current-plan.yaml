@@ -36,3 +36,8 @@ plan:
       output: "Asset 節點、圖片 URL 驗證、本機預覽、歷史尾幀回填"
       verify: "adapter payload tests、瀏覽器 mock 產生後回填下一段、不得把本機檔案假裝成可公開 URL"
       status: completed
+    - id: T8
+      task: "加入本機用量護欄與 API bridge 部署就緒資訊"
+      output: "送出前費用確認、每日任務／秒數上限、可追溯護欄快照與 health limits"
+      verify: "policy 單元測試、health 整合測試、瀏覽器實際設定與送出前確認"
+      status: completed

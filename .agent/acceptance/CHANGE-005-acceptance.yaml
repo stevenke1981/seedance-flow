@@ -1,0 +1,20 @@
+acceptance:
+  id: CHANGE-005
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 7 JavaScript modules"
+    - "npm test（moviedesign）：20 tests passed"
+    - "npm run build（moviedesign）：dist 產物建立成功"
+    - "GET /api/health mock bridge 回報 mode=custom-upstream、maxBodyBytes、requestTimeoutMs、maxDurationSeconds、maxReferenceImages"
+    - "瀏覽器開啟 API 設定可見用量與費用護欄欄位，設定 60 秒／2 次／60 秒並保存於 localStorage"
+    - "mock 送出前顯示費用不確定性與今日用量確認；完成版本保存 guardrail policy 與 usageBefore 快照"
+    - "第三次送出在今日 2 次／60 秒用量達標後被阻擋，歷史數量未增加且顯示用量護欄訊息"
+    - "重新整理後歷史與護欄設定保留；localStorage 未保存 mock API Key"
+  manual_notes:
+    - "MANUAL_REQUIRED：尚未使用正式 Ark Key、正式費率或正式部署環境進行付費真實生成"

@@ -38,6 +38,7 @@ npm run build
 - 生成輪詢有 15 分鐘上限、暫時性錯誤會退避重試；版本卡片可取消排隊／執行中的任務，也可對失敗、取消或完成版本再次生成。
 - 新增 `Reference` 節點後可填入最多 3 個 Ark 可存取的 HTTPS 圖片 URL；Ark payload 會以 `image_url` content 傳送。瀏覽器選取的本機檔案只作預覽，不會上傳或偽裝成公開 URL。
 - 若 Ark 回傳 `last_frame_url`，完成版本會顯示尾幀；按「用尾幀建立下一段」即可將尾幀回填為下一個 `Reference` 節點的「首幀參考」。
+- API 設定中的「用量與費用護欄」只保存非敏感設定：單次最長時長、每日任務數、每日總秒數，以及是否每次送出前確認。歷史版次會記錄送出前用量快照；不估算或承諾供應商美元費用。
 - API 錯誤會保留安全的 code、request ID 與 retryable 狀態；工作流匯入與本地還原會限制節點數、欄位大小、節點 ID 與節點類型。
 - 真實生成需要你在火山引擎 Ark 控制台建立可用的模型／Endpoint ID、API Key 與額度；本專案不會代替使用者執行付費請求。
 
@@ -45,6 +46,8 @@ npm run build
 
 - [Create contents generations task](https://api.volcengine.com/api-docs/view?action=CreateContentsGenerationsTasks&serviceCode=ark&version=2024-01-01)
 - [Get contents generations task](https://api.volcengine.com/api-docs/view?action=GetContentsGenerationsTask&serviceCode=ark&version=2024-01-01)
+
+本機 API bridge 的 `GET /api/health` 會回報目前 upstream 模式與 body、timeout、影片時長、參考圖片數量上限，方便部署前檢查；這不代表已完成正式部署或真實 Ark 驗收。
 
 ## 目前範圍
 

@@ -1,0 +1,19 @@
+change:
+  id: CHANGE-005
+  title: "加入本機用量護欄與 API bridge 部署就緒資訊"
+  classification: feature
+  risk: MEDIUM
+  scope: "生成前費用確認、每日用量限制、歷史護欄快照與 /api/health limits"
+  impact:
+    modules:
+      - "src/generation-policy.mjs"
+      - "src/app.js / index.html / styles.css"
+      - "scripts/api-server.mjs"
+      - "test/generation-policy.test.mjs / test/ark-adapter.test.mjs"
+    protected_flows:
+      - "API Key 仍只存在目前分頁記憶體"
+      - "既有 Reference、尾幀接續與版本歷史"
+      - "上層主站與既有工作流功能"
+    public_contract: "GET /api/health 新增 mode 與 limits；生成前由瀏覽器執行本機護欄"
+  rollback: "回復 CHANGE-005 相關檔案即可；既有生成 payload 與歷史欄位保持相容"
+  external_gate: "正式部署、真實 Ark 認證、供應商費率與配額仍需外部確認"

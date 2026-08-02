@@ -66,6 +66,22 @@ test('local API proxy never returns or persists the API key', async () => {
   assert.doesNotMatch(responseBody, /secret-that-must-not-echo/);
 });
 
+test('local API health reports deployment limits without secrets', async () => {
+  const handleApi = createApiHandler({ baseUrl: 'https://user:secret@ark.example.test/api/v3?token=hidden', requestTimeoutMs: 12_000 });
+  let responseBody = '';
+  let responseStatus = 0;
+  await handleApi({ method: 'GET', headers: {} }, { writeHead(status) { responseStatus = status; }, end(body) { responseBody = body; } }, '/api/health');
+  assert.equal(responseStatus, 200);
+  assert.deepEqual(JSON.parse(responseBody), {
+    ok: true,
+    provider: 'volcengine-ark',
+    mode: 'custom-upstream',
+    baseUrl: 'https://ark.example.test/api/v3',
+    limits: { maxBodyBytes: 1_048_576, requestTimeoutMs: 12_000, maxDurationSeconds: 180, maxReferenceImages: 3 },
+  });
+  assert.doesNotMatch(responseBody, /api-key|secret|authorization/i);
+});
+
 test('local API proxy returns structured validation errors and supports cancellation', async () => {
   const handleApi = createApiHandler({ baseUrl: 'https://ark.example.test/api/v3', fetchImpl: async (_url, options) => {
     assert.equal(options.method, 'DELETE');

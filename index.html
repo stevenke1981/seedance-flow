@@ -89,8 +89,18 @@
         <p class="api-note">金鑰只留在目前分頁的記憶體，不寫入 localStorage、工作流 JSON 或伺服器。按下生成時才會透過本機 proxy 傳送。</p>
         <label class="field"><span class="field-label"><span>Ark API Key</span><span class="field-type">MEMORY ONLY</span></span><input id="ark-api-key" type="password" autocomplete="off" placeholder="貼上你的 Ark API Key" /></label>
         <label class="field"><span class="field-label"><span>模型／Endpoint ID</span><span class="field-type">REQUIRED</span></span><input id="ark-model" type="text" autocomplete="off" placeholder="輸入控制台提供的 Seedance Endpoint ID" /></label>
+        <div class="policy-panel">
+          <div class="field-label"><span>用量與費用護欄</span><span class="field-type">LOCAL ONLY</span></div>
+          <p class="policy-note">供應商價格依模型與時長變動，本機不估算美元金額；以下限制只控制送出量，並可在每次請求前要求確認。</p>
+          <div class="policy-grid">
+            <label class="field"><span class="field-label"><span>單次最長時長（秒）</span><span class="field-type">1–180</span></span><input id="policy-max-duration" type="number" min="1" max="180" step="1" /></label>
+            <label class="field"><span class="field-label"><span>每日任務上限</span><span class="field-type">1–100</span></span><input id="policy-daily-tasks" type="number" min="1" max="100" step="1" /></label>
+            <label class="field"><span class="field-label"><span>每日總時長（秒）</span><span class="field-type">1–3600</span></span><input id="policy-daily-duration" type="number" min="1" max="3600" step="1" /></label>
+          </div>
+          <label class="policy-checkbox"><input id="policy-confirmation" type="checkbox" /> <span>每次送出前顯示費用與用量確認</span></label>
+        </div>
         <div class="api-modal-actions"><button id="clear-api-config" class="button button-danger" type="button">清除記憶體金鑰</button><button id="save-api-config" class="button button-primary" type="button">儲存到本分頁</button></div>
-        <p class="api-footnote">目前使用火山方舟 `/api/v3/contents/generations/tasks` 非同步任務 API；正式模型 ID 以你的控制台為準。</p>
+        <p class="api-footnote">目前使用火山方舟 `/api/v3/contents/generations/tasks` 非同步任務 API；正式模型 ID 以你的控制台為準。用量護欄設定只留在本機，不會傳給 Ark。</p>
       </section>
     </div>
     <script type="module" src="./src/app.js"></script>

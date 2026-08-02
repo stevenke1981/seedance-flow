@@ -148,6 +148,11 @@ h2 { font-size: 14px; letter-spacing: -.01em; }
 .history-prompt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.45; white-space: pre-wrap; }
 .history-video { width: 100%; margin-top: 8px; background: #080b0c; }
 .history-frame { display: block; width: min(180px, 100%); margin-top: 8px; border: 1px solid var(--line); background: #080b0c; }
+.policy-panel { display: grid; gap: 8px; margin-top: 14px; padding: 10px; border: 1px solid var(--line); background: rgba(255,255,255,.02); }
+.policy-note { margin: 0; color: var(--dim); font-size: 10px; line-height: 1.5; }
+.policy-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.policy-checkbox { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.policy-checkbox input { accent-color: var(--amber); }
 .history-links { display: flex; gap: 8px; margin-top: 8px; }
 .history-link { color: var(--cyan); font-size: 10px; text-decoration: none; } .history-link:hover { text-decoration: underline; }
 .history-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -172,5 +177,5 @@ h2 { font-size: 14px; letter-spacing: -.01em; }
   .topbar { padding: 12px 14px; } .brand-lockup { min-width: 0; } .topbar-actions { width: 100%; margin-left: 0; } .topbar-actions .button { flex: 1; }
   .model-chip { flex: 1; } .save-state { display: none; } .node-library { grid-template-columns: repeat(2, minmax(0, 1fr)); } .library-item { min-height: 44px; } .library-subtitle { display: none; }
   .workspace-column { min-height: 640px; grid-template-rows: 46px minmax(390px, 1fr) 190px; } .timeline-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } .beat:nth-child(3), .beat:nth-child(4) { margin-top: 5px; }
-  .inspector-panel { display: flex; flex-direction: column; } .prompt-section { border-left: 0; border-top: 1px solid var(--line); } .prompt-output { max-height: 350px; } .node-canvas { min-width: 760px; } .topbar-actions .button { min-width: 0; padding-inline: 8px; font-size: 10px; } .history-section { max-height: none; }
+  .inspector-panel { display: flex; flex-direction: column; } .prompt-section { border-left: 0; border-top: 1px solid var(--line); } .prompt-output { max-height: 350px; } .node-canvas { min-width: 760px; } .topbar-actions .button { min-width: 0; padding-inline: 8px; font-size: 10px; } .history-section { max-height: none; } .policy-grid { grid-template-columns: 1fr; }
 }

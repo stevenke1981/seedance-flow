@@ -1,5 +1,5 @@
 baseline:
-id: BASELINE-20260802-004
+id: BASELINE-20260802-005
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -14,12 +14,16 @@ id: BASELINE-20260802-004
     - "Reference 節點可輸入最多 3 個 Ark 可存取的 HTTPS 參考圖片"
     - "本機圖片只提供預覽，不會偽裝成可公開 URL 送往 Ark"
     - "完成版本保存尾幀並可回填為下一段的首幀參考"
+    - "本機用量護欄可限制單次時長、每日任務數與每日總秒數"
+    - "送出前可要求費用不確定性與當日用量確認，歷史保存護欄快照"
+    - "API health 回報 upstream 模式與部署 limits，不暴露金鑰"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
     - "拖曳節點、重新整理後狀態保留"
     - "下載 JSON 工作流與 TXT 提示詞"
     - "API 設定不落盤，生成歷史可在本機查看任務狀態"
+    - "設定用量護欄、確認付費風險後送出 mock 生成，重新整理後護欄與歷史仍保留"
   protected_behavior:
     - "上層譯匠主站檔案與 .openai/hosting.json 不變"
     - "上層 npm run lint、npm run build、npm test 通過"
@@ -41,3 +45,4 @@ id: BASELINE-20260802-004
     - ".agent/acceptance/CHANGE-002-acceptance.yaml"
     - ".agent/acceptance/CHANGE-003-acceptance.yaml"
     - ".agent/acceptance/CHANGE-004-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-005-acceptance.yaml"

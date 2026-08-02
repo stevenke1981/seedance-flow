@@ -1,6 +1,6 @@
 next_feature:
   autonomy: recommend_only
-  title: "正式部署 API bridge 與成本確認"
-  evidence: "參考圖片 image_url payload 與尾幀接續已在本機 mock 流程完成，但公開部署仍只有本機 API bridge；真實 Ark 生成尚未取得有效認證與費用確認。"
-  rationale: "沒有安全部署的 API bridge，公開靜態網站無法真正生成影片；外部生成也涉及金鑰、額度、費用與運營責任。"
-  not_implemented_reason: "需要部署目標、正式 Ark 認證、成本上限與安全邊界確認，屬外部狀態與可能付費的高風險工作，先列為 recommend_only。"
+  title: "正式部署 API bridge 與真實 Ark 費用／配額確認"
+  evidence: "本機用量護欄、送出前確認與 health limits 已完成，但公開部署仍只有本機 API bridge；真實 Ark 連線尚未取得有效認證與正式費用／配額資料。"
+  rationale: "要讓公開網站真正生成影片，仍需選定部署目標、保護 API bridge、接入正式額度與確認費率。"
+  not_implemented_reason: "需要部署目標、正式 Ark 認證、成本上限與安全邊界確認，屬外部狀態與可能付費的高風險工作，維持 recommend_only。"
