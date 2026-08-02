@@ -1,5 +1,5 @@
 baseline:
-id: BASELINE-20260802-007
+id: BASELINE-20260802-008
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -22,6 +22,8 @@ id: BASELINE-20260802-007
     - "release:check 可驗證 dist 核心產物並輸出 SHA-256 manifest"
     - "release:check:strict 可將 production bridge preflight 與產物完整性納入發布 gate"
     - ".env.example 提供平台無關設定模板且不含任何秘密"
+    - "影片版本可匯出為 schemaVersion=1 的本機 JSON archive，也可驗證後匯入"
+    - "版本 archive 使用欄位白名單排除 API Key，限制 40 筆／2 MB 並依 id 去重合併"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
@@ -45,6 +47,7 @@ id: BASELINE-20260802-007
   known_limitations:
     - "真實 Ark 影片生成尚待有效 API Key、模型／Endpoint ID 與費用確認（MANUAL_REQUIRED）"
     - "正式 bridge 部署、DNS、TLS、監控與費用／配額尚待專案負責人確認（MANUAL_REQUIRED）"
+    - "版本 archive 目前只在使用者手動下載／選取檔案時跨瀏覽器搬移，不提供雲端同步"
     - "瀏覽器若拒絕剪貼簿權限，需手動 Ctrl/Cmd+C"
   evidence:
     - ".agent/acceptance/CHANGE-001-acceptance.yaml"
@@ -54,3 +57,4 @@ id: BASELINE-20260802-007
     - ".agent/acceptance/CHANGE-005-acceptance.yaml"
     - ".agent/acceptance/CHANGE-006-acceptance.yaml"
     - ".agent/acceptance/CHANGE-007-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-008-acceptance.yaml"

@@ -76,8 +76,8 @@
             <p id="action-status" class="action-status" role="status" aria-live="polite"></p>
           </div>
           <div class="inspector-section history-section">
-            <div class="prompt-heading"><div><p class="eyebrow">VERSION HISTORY</p><h2>影片版本</h2></div><span id="history-count" class="selected-chip">00</span></div>
-            <p class="history-note">只在本機保存提示詞、任務狀態與影片連結；API 金鑰不會寫入歷史。</p>
+            <div class="prompt-heading"><div><p class="eyebrow">VERSION HISTORY</p><h2>影片版本</h2></div><div class="history-heading-tools"><span id="history-count" class="selected-chip">00</span><button id="export-history" class="button button-quiet history-tool" type="button">匯出版本</button><button id="import-history" class="button button-quiet history-tool" type="button">匯入版本</button><input id="import-history-file" type="file" accept="application/json,.json" hidden /></div></div>
+            <p class="history-note">版本可封存成 JSON 跨瀏覽器匯入；只保存提示詞、任務狀態與影片連結，API 金鑰不會寫入 archive。</p>
             <div id="version-history" class="version-history"><div class="empty-history">尚未提交影片生成任務。</div></div>
           </div>
         </aside>

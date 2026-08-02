@@ -16,10 +16,17 @@ import {
   normalizeGenerationPolicy,
   summarizeDailyUsage,
 } from './generation-policy.mjs';
+import {
+  HISTORY_ARCHIVE_LIMITS,
+  mergeHistoryEntries,
+  parseHistoryArchive,
+  sanitizeHistoryEntry,
+  serializeHistoryArchive,
+} from './history-archive.mjs';
 
 const HISTORY_KEY = 'seedance-flow-history-v1';
 const STATUS_LABELS = { queued: '排隊中', running: '生成中', cancelling: '取消中', succeeded: '已完成', failed: '失敗', expired: '已過期', cancelled: '已取消' };
-const MAX_HISTORY = 40;
+const MAX_HISTORY = HISTORY_ARCHIVE_LIMITS.maxEntries;
 const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_MS = 15 * 60 * 1000;
 const MAX_POLL_RETRIES = 3;
@@ -57,6 +64,7 @@ let apiConfig = { apiKey: '', model: '' };
 let generationPolicy = loadGenerationPolicy();
 let history = loadHistory();
 const pollTimers = new Map();
+const pollingGenerations = new Map();
 const submitting = new Set();
 const assetPreviews = new Map();
 
@@ -74,7 +82,7 @@ function loadHistory() {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY).map(normalizeHistoryEntry).filter(Boolean) : [];
+    return Array.isArray(parsed) ? parsed.slice(0, MAX_HISTORY).map(sanitizeHistoryEntry).map(normalizeHistoryEntry).filter(Boolean) : [];
   } catch {
     return [];
   }
@@ -137,7 +145,7 @@ function normalizeHistoryEntry(entry) {
 }
 
 function persistHistory() {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY))); } catch { announce('版本歷史無法寫入本機儲存。', 'error'); }
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY).map(sanitizeHistoryEntry).filter(Boolean))); } catch { announce('版本歷史無法寫入本機儲存。', 'error'); }
 }
 
 function nextVersion() {
@@ -548,10 +556,15 @@ function schedulePoll(entry, delay = POLL_INTERVAL_MS) {
 }
 
 function persistEntry(entry) {
-  const index = history.findIndex((item) => item.id === entry.id);
-  if (index >= 0) history[index] = entry;
+  const index = history.findIndex((item) => item === entry);
+  if (index < 0) return;
+  history[index] = entry;
   persistHistory();
   renderHistory();
+}
+
+function isCurrentHistoryEntry(entry) {
+  return history.some((item) => item === entry);
 }
 
 function finishGeneration(entry, status, message = '') {
@@ -566,6 +579,20 @@ function finishGeneration(entry, status, message = '') {
 }
 
 async function pollGeneration(entry) {
+  if (!isCurrentHistoryEntry(entry) || !entry.taskId || !apiConfig.apiKey || ['succeeded', 'failed', 'expired', 'cancelled', 'cancelling'].includes(entry.status) || pollingGenerations.has(entry.id)) return;
+  pollingGenerations.set(entry.id, entry);
+  try {
+    await pollGenerationRequest(entry);
+  } finally {
+    if (pollingGenerations.get(entry.id) === entry) {
+      pollingGenerations.delete(entry.id);
+      const replacement = history.find((item) => item.id === entry.id && item !== entry);
+      if (replacement && replacement.taskId && apiConfig.apiKey && ['queued', 'running'].includes(replacement.status)) schedulePoll(replacement, 0);
+    }
+  }
+}
+
+async function pollGenerationRequest(entry) {
   if (!entry.taskId || !apiConfig.apiKey || ['succeeded', 'failed', 'expired', 'cancelled', 'cancelling'].includes(entry.status)) return;
   const startedAt = Date.parse(entry.pollStartedAt || entry.createdAt || '') || Date.now();
   if (!entry.pollStartedAt) entry.pollStartedAt = new Date(startedAt).toISOString();
@@ -576,6 +603,7 @@ async function pollGeneration(entry) {
   try {
     const response = await fetch(`/api/generations/${encodeURIComponent(entry.taskId)}`, { headers: apiHeaders() });
     const task = await responseJson(response);
+    if (!isCurrentHistoryEntry(entry)) return;
     if (entry.status === 'cancelling') return;
     entry.status = task.status || entry.status;
     entry.videoUrl = task.videoUrl || entry.videoUrl || '';
@@ -593,6 +621,7 @@ async function pollGeneration(entry) {
     }
     schedulePoll(entry);
   } catch (error) {
+    if (!isCurrentHistoryEntry(entry)) return;
     entry.errorCode = error.code || '';
     entry.requestId = error.requestId || '';
     entry.pollRetries = (entry.pollRetries || 0) + 1;
@@ -708,12 +737,14 @@ async function cancelGeneration(entry) {
   try {
     const response = await fetch(`/api/generations/${encodeURIComponent(entry.taskId)}`, { method: 'DELETE', headers: apiHeaders() });
     const task = await responseJson(response);
+    if (!isCurrentHistoryEntry(entry)) return;
     entry.videoUrl = task.videoUrl || entry.videoUrl || '';
     entry.lastFrameUrl = task.lastFrameUrl || entry.lastFrameUrl || '';
     entry.usage = task.usage || entry.usage || null;
     const finalStatus = ['succeeded', 'failed', 'expired', 'cancelled'].includes(task.status) ? task.status : 'cancelled';
     finishGeneration(entry, finalStatus, task.error?.message || '已取消。');
   } catch (error) {
+    if (!isCurrentHistoryEntry(entry)) return;
     entry.status = previousStatus;
     entry.errorCode = error.code || '';
     entry.requestId = error.requestId || '';
@@ -757,7 +788,9 @@ function useLastFrame(entry) {
 
 function resumePendingGenerations() {
   if (!apiConfig.apiKey) return;
-  history.filter((entry) => entry.taskId && ['queued', 'running'].includes(entry.status)).forEach((entry) => pollGeneration(entry));
+  history.filter((entry) => entry.taskId && ['queued', 'running'].includes(entry.status)).forEach((entry) => {
+    if (!pollTimers.has(entry.id)) pollGeneration(entry);
+  });
 }
 
 function renderTimeline() {
@@ -844,6 +877,46 @@ function downloadPrompt() {
   announce('提示詞文字檔已下載。');
 }
 
+function exportHistory() {
+  try {
+    const date = new Date().toISOString().slice(0, 10);
+    downloadFile(`seedance-flow-history-${date}.json`, serializeHistoryArchive(history), 'application/json;charset=utf-8');
+    announce(`已匯出 ${history.length} 個影片版本。`);
+  } catch (error) {
+    announce(`無法匯出版本歷史：${error.message || 'archive 太大。'}`, 'error');
+  }
+}
+
+function importHistory() {
+  const input = $('#import-history-file');
+  input.value = '';
+  input.click();
+}
+
+async function handleHistoryImport(file) {
+  if (!file) return;
+  try {
+    const raw = await file.text();
+    const parsed = parseHistoryArchive(raw);
+    const normalized = parsed.map(sanitizeHistoryEntry).map(normalizeHistoryEntry).filter(Boolean);
+    if (normalized.length !== parsed.length) throw new Error('版本歷史格式無效：包含無效紀錄。');
+    const previousHistory = history;
+    const existingIds = new Set(previousHistory.map((entry) => entry.id));
+    normalized.forEach((entry) => clearPoll(entry));
+    history = mergeHistoryEntries(previousHistory, normalized);
+    const retainedIds = new Set(history.map((entry) => entry.id));
+    previousHistory.filter((entry) => !retainedIds.has(entry.id)).forEach((entry) => clearPoll(entry));
+    const importedIds = new Set(normalized.map((entry) => entry.id));
+    const added = history.filter((entry) => importedIds.has(entry.id) && !existingIds.has(entry.id)).length;
+    persistHistory();
+    renderHistory();
+    resumePendingGenerations();
+    announce(`已匯入 ${normalized.length} 個版本，新增 ${added} 個。`);
+  } catch (error) {
+    announce(`無法匯入版本歷史：${error.message || '檔案格式不正確。'}`, 'error');
+  }
+}
+
 function resetWorkflow() {
   assetPreviews.forEach((_preview, nodeId) => clearAssetPreview(nodeId));
   workflow = createDefaultWorkflow();
@@ -927,6 +1000,9 @@ deleteButton.addEventListener('click', deleteSelected);
 $('#copy-prompt').addEventListener('click', copyPrompt);
 $('#download-prompt').addEventListener('click', downloadPrompt);
 $('#export-workflow').addEventListener('click', exportWorkflow);
+$('#export-history').addEventListener('click', exportHistory);
+$('#import-history').addEventListener('click', importHistory);
+$('#import-history-file').addEventListener('change', (event) => { handleHistoryImport(event.target.files?.[0]); });
 $('#reset-workflow').addEventListener('click', resetWorkflow);
 $('#generate-video').addEventListener('click', generateVideo);
 versionHistory.addEventListener('click', (event) => {

@@ -34,6 +34,7 @@ npm run build
 
 - 「生成影片」會將目前預覽提示詞與 Output 節點的比例／時長送到 Ark `contents/generations/tasks`，再以輪詢取得完成狀態。
 - 每次送出會建立 `v001`、`v002`…版次，保存提示詞、FNV-1a 摘要、模型、工作流快照、任務狀態與影片連結。
+- 版本歷史區可將目前紀錄匯出為 `seedance-flow-history-YYYY-MM-DD.json`；匯入時會驗證 archive schema、限制最多 40 筆並依紀錄 ID 去重合併。下載檔只包含版本欄位，不包含 API Key。
 - 重新整理頁面後，尚未完成的任務只會在本分頁重新輸入 API Key 後恢復輪詢。
 - 生成輪詢有 15 分鐘上限、暫時性錯誤會退避重試；版本卡片可取消排隊／執行中的任務，也可對失敗、取消或完成版本再次生成。
 - 新增 `Reference` 節點後可填入最多 3 個 Ark 可存取的 HTTPS 圖片 URL；Ark payload 會以 `image_url` content 傳送。瀏覽器選取的本機檔案只作預覽，不會上傳或偽裝成公開 URL。
@@ -65,7 +66,7 @@ npm run dev
 
 `npm run preflight` 會列出目前設定是否就緒；`preflight:strict` 在條件不足時以失敗結束。rate limit 是單一 bridge process 的記憶體護欄，正式多執行個體部署仍需平台層級限流與正式監控。
 
-第 2 階段的 `release:check` 會檢查 `dist/` 是否包含完整可發布產物並輸出每個檔案的 SHA-256；`release:check:strict` 會再要求 production preflight 通過。`.env.example` 只提供設定名稱與範例，不含任何憑證。
+第 2 階段的 `release:check` 會檢查 `dist/` 是否包含完整可發布產物並輸出每個檔案的 SHA-256；`release:check:strict` 會再要求 production preflight 通過。第 3 階段的 archive 也會納入 `dist/src/history-archive.mjs` 產物檢查。`.env.example` 只提供設定名稱與範例，不含任何憑證。
 
 ## 目前範圍
 

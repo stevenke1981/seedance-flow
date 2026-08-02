@@ -1,0 +1,21 @@
+acceptance:
+  id: CHANGE-008
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 11 JavaScript modules"
+    - "npm test（moviedesign）：29 tests passed"
+    - "npm run build（moviedesign）：dist 建立成功，release check 納入 history-archive.mjs"
+    - "npm run release:check：8 個核心產物含 bytes 與 SHA-256；未設定正式環境時 preflight 明確輸出 NOT_READY"
+    - "npm run release:check:strict：以 HTTPS upstream、HTTPS origin、0.0.0.0、requireOrigin=true 與 rate limit 設定輸出 READY，exit 0"
+    - "history archive 測試：allowlist round-trip、遞迴敏感鍵排除、schema／大小／id 驗證、超大 archive 防護與去重合併全部通過"
+    - "agent-browser 桌面驗收：本機 Seedance Flow 載入，匯出版本控制可操作並顯示匯出狀態"
+    - "agent-browser 390x844 驗收：文件寬度 390px，無水平溢位，匯出／匯入控制仍可見"
+  manual_notes:
+    - "MANUAL_REQUIRED：瀏覽器檔案選擇器的實際匯入需使用者選取一份合法 archive；自動化已覆蓋 parser／merge 與錯誤邊界，但未將檔案選擇器操作標記為 PASS"
+    - "本階段只做本機可攜式 archive，不包含雲端同步、正式部署或真實 Ark 生成"

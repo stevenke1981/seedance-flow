@@ -1,6 +1,6 @@
 next_feature:
   autonomy: recommend_only
   title: "正式部署 API bridge 與真實 Ark 費用／配額確認"
-  evidence: "本機用量護欄、Origin／rate limit、strict preflight、health security limits、release:check 與 dist SHA-256 manifest 已完成，但公開部署仍只有本機 API bridge；真實 Ark 連線尚未取得有效認證與正式費用／配額資料。"
+  evidence: "本機用量護欄、Origin／rate limit、strict preflight、health security limits、release:check、dist SHA-256 manifest 與版本 history archive 已完成，但公開部署仍只有本機 API bridge；真實 Ark 連線尚未取得有效認證與正式費用／配額資料。"
   rationale: "要讓公開網站真正生成影片，仍需選定部署目標、保護 API bridge、接入正式額度與確認費率。"
   not_implemented_reason: "需要部署目標、正式 Ark 認證、成本上限與安全邊界確認，屬外部狀態與可能付費的高風險工作，維持 recommend_only。"

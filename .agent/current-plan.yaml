@@ -51,3 +51,8 @@ plan:
       output: "release check、產物 SHA-256 manifest、.env.example 與平台無關部署檢查"
       verify: "release-check tests、strict ready/not-ready、build 後產物與上層主站回歸"
       status: completed
+    - id: T11
+      task: "完成第 3 階段影片版本歷史封存與匯入"
+      output: "可攜式版本歷史 JSON archive、匯出／匯入 UI、格式驗證與合併策略"
+      verify: "archive 單元測試、lint/build、瀏覽器下載與匯入錯誤流程"
+      status: completed

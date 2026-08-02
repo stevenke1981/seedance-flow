@@ -135,6 +135,8 @@ h2 { font-size: 14px; letter-spacing: -.01em; }
 .action-status { min-height: 17px; margin-top: 8px; color: var(--lime); font-size: 10px; }
 .action-status[data-tone="error"] { color: var(--rose); }
 .history-section { max-height: 360px; overflow: auto; }
+.history-heading-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.history-tool { min-height: 26px; padding: 4px 7px; font-size: 9px; }
 .history-note { margin: 10px 0 12px; color: var(--dim); font-size: 10px; line-height: 1.5; }
 .version-history { display: grid; gap: 8px; }
 .empty-history { color: var(--dim); font-size: 10px; line-height: 1.5; }

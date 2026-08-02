@@ -5,6 +5,6 @@ import { join } from 'node:path';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('..', import.meta.url));
-const files = ['src/app.js', 'src/prompt-engine.mjs', 'src/ark-adapter.mjs', 'src/generation-policy.mjs', 'src/bridge-policy.mjs', 'scripts/dev-server.mjs', 'scripts/api-server.mjs', 'scripts/build.mjs', 'scripts/preflight.mjs', 'scripts/release-check.mjs'];
+const files = ['src/app.js', 'src/prompt-engine.mjs', 'src/ark-adapter.mjs', 'src/generation-policy.mjs', 'src/bridge-policy.mjs', 'src/history-archive.mjs', 'scripts/dev-server.mjs', 'scripts/api-server.mjs', 'scripts/build.mjs', 'scripts/preflight.mjs', 'scripts/release-check.mjs'];
 for (const file of files) await exec(process.execPath, ['--check', join(root, file)]);
 console.log(`Linted ${files.length} JavaScript modules.`);

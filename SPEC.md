@@ -32,6 +32,7 @@
 15. `/api/health` 回報 upstream 模式與部署相關 limits，不回傳 API Key 或其他敏感資訊。
 16. API bridge 支援 HTTPS Origin allowlist、Origin 強制檢查、每分鐘請求上限與可配置 bind host；`preflight:strict` 必須在正式部署前通過。
 17. 第 2 階段 release check 必須驗證 `dist/` 核心產物存在並輸出 SHA-256 manifest；strict 模式同時要求 production preflight 通過，不得包含真實憑證。
+18. 第 3 階段版本歷史可匯出／匯入 `schemaVersion=1`、`kind=seedance-flow-history` 的 JSON archive；匯入必須限制最多 40 筆、依 ID 去重，且 archive 不得包含 API Key。
 
 ## 內容對齊方向
 
@@ -59,4 +60,5 @@
 - 用量護欄可在本機阻擋超出上限的任務，並在送出前顯示費用不確定性與當日用量；限制設定只留在瀏覽器本機。
 - bridge 安全邊界可用 mock request 驗證：不允許的 Origin 得到 403，超過速率得到 429 與 Retry-After，允許來源得到 CORS header。
 - release check 可在沒有雲端帳號的本機環境先驗證發布產物與設定，不宣稱已完成正式部署。
+- 版本 archive 可在本機下載與重新匯入，格式錯誤或超過上限時顯示可理解錯誤；跨裝置同步服務仍不在範圍內。
 - 真實火山引擎生成需以主人提供的有效 Key、模型／Endpoint ID 及費用確認進行；沒有這些條件時標示 `MANUAL_REQUIRED`，不得宣稱已生成影片。

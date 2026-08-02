@@ -1,0 +1,18 @@
+change:
+  id: CHANGE-008
+  title: "完成第 3 階段影片版本歷史封存與匯入"
+  classification: feature
+  risk: MEDIUM
+  scope: "版本歷史 JSON archive、版本匯出／匯入控制、格式驗證、去重合併與本機回復"
+  impact:
+    modules:
+      - "src/history-archive.mjs / test/history-archive.test.mjs"
+      - "src/app.js / index.html / styles.css"
+      - "scripts/lint.mjs / scripts/release-check.mjs / README.md / SPEC.md"
+    protected_flows:
+      - "既有生成、輪詢、取消、重試、尾幀接續與 localStorage 版本歷史"
+      - "API Key 不進 archive、不進下載檔、不進 localStorage 歷史"
+      - "工作流匯出與提示詞下載維持原有檔名與行為"
+    public_contract: "版本 archive schemaVersion=1、kind=seedance-flow-history；匯入只接受合法 JSON 並以 id 去重合併"
+  rollback: "回復 CHANGE-008 相關檔案即可；既有 localStorage key 與工作流 schema 不變"
+  external_gate: "雲端同步、正式部署與真實 Ark 生成仍不在本階段"
