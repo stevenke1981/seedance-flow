@@ -419,7 +419,7 @@ function finishGeneration(entry, status, message = '') {
 }
 
 async function pollGeneration(entry) {
-  if (!entry.taskId || !apiConfig.apiKey || ['succeeded', 'failed', 'expired', 'cancelled'].includes(entry.status)) return;
+  if (!entry.taskId || !apiConfig.apiKey || ['succeeded', 'failed', 'expired', 'cancelled', 'cancelling'].includes(entry.status)) return;
   const startedAt = Date.parse(entry.pollStartedAt || entry.createdAt || '') || Date.now();
   if (!entry.pollStartedAt) entry.pollStartedAt = new Date(startedAt).toISOString();
   if (Date.now() - startedAt > MAX_POLL_MS) {
@@ -429,6 +429,7 @@ async function pollGeneration(entry) {
   try {
     const response = await fetch(`/api/generations/${encodeURIComponent(entry.taskId)}`, { headers: apiHeaders() });
     const task = await responseJson(response);
+    if (entry.status === 'cancelling') return;
     entry.status = task.status || entry.status;
     entry.videoUrl = task.videoUrl || entry.videoUrl || '';
     entry.lastFrameUrl = task.lastFrameUrl || entry.lastFrameUrl || '';
