@@ -1,0 +1,18 @@
+change:
+  id: CHANGE-012
+  title: "使用內建生圖工具為八種節點加入一致 icon"
+  classification: feature
+  risk: LOW
+  scope: "節點 icon sprite 資產、節點庫／畫布／懸停浮窗呈現與 release 複製"
+  impact:
+    modules:
+      - "output/imagegen/node-icons-sprite.png"
+      - "src/app.js / styles.css / scripts/build.mjs / scripts/release-check.mjs"
+      - "README.md / SPEC.md / .agent/current-plan.yaml / .agent/baseline.yaml"
+    protected_flows:
+      - "節點新增、選取、拖曳、鍵盤聚焦與懸停編輯"
+      - "提示詞、workflow/history schema、API Key 邊界與 Ark 生成流程"
+      - "390px mobile responsive layout 與 release manifest"
+    public_contract: "新增為靜態 UI asset，不改變 workflow schema、API payload、localStorage key 或外部介面"
+  rollback: "回復 CHANGE-012 相關檔案即可；不涉及外部 API、資料 migration 或正式資料"
+  external_gate: "正式 Ark 生成與 DNS/TLS 仍依既有 MANUAL_REQUIRED 邊界"

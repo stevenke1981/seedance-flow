@@ -71,3 +71,8 @@ plan:
       output: "浮窗內文字／textarea／select 編輯、節點與 Inspector／提示詞同步、跨節點移入保持開啟"
       verify: "lint/build/test/release、瀏覽器浮窗編輯同步、select 編輯、滑入浮窗與 390px 驗收"
       status: completed
+    - id: T15
+      task: "使用內建生圖工具為八種節點加入一致 icon"
+      output: "4×2 icon sprite、節點庫／畫布／懸停浮窗對應圖示與 release asset"
+      verify: "image asset inspection、lint/build/release、瀏覽器八種節點圖示與 mobile 驗收"
+      status: completed

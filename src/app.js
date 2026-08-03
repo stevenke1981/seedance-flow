@@ -207,8 +207,8 @@ function renderNodeHoverPreview(node) {
   const heading = document.createElement('div');
   heading.className = 'node-hover-preview-heading';
   const icon = document.createElement('span');
-  icon.className = `node-icon accent-${meta.accent}`;
-  icon.textContent = meta.icon;
+  icon.className = `node-icon node-icon-art icon-${meta.type}`;
+  icon.setAttribute('aria-hidden', 'true');
   const copy = document.createElement('div');
   copy.className = 'node-hover-preview-heading-copy';
   const title = document.createElement('strong');
@@ -406,7 +406,7 @@ function renderLibrary() {
     button.className = `library-item accent-${item.accent}`;
     button.dataset.addNode = item.type;
     button.setAttribute('aria-label', `新增 ${item.title} 節點`);
-    button.innerHTML = `<span class="library-icon">${item.icon}</span><span class="library-copy"><span class="library-title">${item.title}</span><span class="library-subtitle">${item.subtitle}</span></span><span class="library-add" aria-hidden="true">＋</span>`;
+    button.innerHTML = `<span class="library-icon node-icon-art icon-${item.type}" aria-hidden="true"></span><span class="library-copy"><span class="library-title">${item.title}</span><span class="library-subtitle">${item.subtitle}</span></span><span class="library-add" aria-hidden="true">＋</span>`;
     library.append(button);
   });
 }
@@ -423,7 +423,7 @@ function renderCanvas() {
     article.style.top = `${Math.round(node.y)}px`;
     article.setAttribute('aria-label', `${meta.title} 節點`);
     article.tabIndex = 0;
-    article.innerHTML = `<div class="node-head" data-drag-handle="true"><span class="node-icon">${meta.icon}</span><span class="node-head-copy"><span class="node-title">${meta.title}</span><span class="node-subtitle">${meta.subtitle}</span></span><span class="node-menu" aria-hidden="true">⋯</span></div><div class="node-body"><div class="node-preview"></div><div class="node-footer"><span>${fieldsFor(node.type).length} CONTROLS</span><span class="node-port" aria-hidden="true"></span></div></div>`;
+    article.innerHTML = `<div class="node-head" data-drag-handle="true"><span class="node-icon node-icon-art icon-${meta.type}" aria-hidden="true"></span><span class="node-head-copy"><span class="node-title">${meta.title}</span><span class="node-subtitle">${meta.subtitle}</span></span><span class="node-menu" aria-hidden="true">⋯</span></div><div class="node-body"><div class="node-preview"></div><div class="node-footer"><span>${fieldsFor(node.type).length} CONTROLS</span><span class="node-port" aria-hidden="true"></span></div></div>`;
     article.querySelector('.node-preview').textContent = previewFor(node);
     article.addEventListener('pointerenter', () => scheduleNodeHoverPreview(node, article));
     article.addEventListener('pointerleave', scheduleNodeHoverPreviewDismiss);

@@ -7,6 +7,7 @@ import { validateProductionBridgeConfig } from '../src/bridge-policy.mjs';
 export const REQUIRED_RELEASE_FILES = Object.freeze([
   'dist/index.html',
   'dist/styles.css',
+  'dist/output/imagegen/node-icons-sprite.png',
   'dist/src/app.js',
   'dist/src/prompt-engine.mjs',
   'dist/src/ark-adapter.mjs',

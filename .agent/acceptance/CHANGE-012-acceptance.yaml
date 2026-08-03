@@ -1,0 +1,19 @@
+acceptance:
+  id: CHANGE-012
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "內建 image_gen 產出 4×2 node-icons-sprite.png，view_image 檢查為八個無文字、同風格節點圖示"
+    - "npm run lint（moviedesign）：Linted 13 JavaScript modules"
+    - "npm test（moviedesign）：35 tests passed"
+    - "npm run build（moviedesign）：dist/output/imagegen/node-icons-sprite.png 成功複製"
+    - "npm run release:check：輸出 READY，11 個核心產物含 bytes 與 SHA-256"
+    - "agent-browser 驗收：節點庫、畫布與 Scene 懸停浮窗均載入 node-icon-art 對應圖示 class"
+    - "agent-browser 390x844 驗收：documentWidth 與 clientWidth 均為 390px，圖示不造成水平溢位"
+  manual_notes:
+    - "MANUAL_REQUIRED：正式 Ark 生成、bridge／DNS／TLS 與費用／配額仍需正式認證及外部設定"

@@ -66,6 +66,15 @@ h2 { font-size: 14px; letter-spacing: -.01em; }
 .library-item { display: grid; grid-template-columns: 27px 1fr auto; align-items: center; gap: 9px; width: 100%; min-height: 48px; padding: 7px 8px; border: 1px solid transparent; color: var(--ink); background: rgba(255,255,255,.015); text-align: left; }
 .library-item:hover { border-color: var(--line-strong); background: rgba(255,255,255,.04); }
 .library-icon, .node-icon { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid currentColor; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.node-icon-art { color: transparent; background-image: url('./output/imagegen/node-icons-sprite.png'); background-repeat: no-repeat; background-size: 400% 200%; border-color: rgba(255,255,255,.16); }
+.node-icon-art.icon-scene { background-position: 0% 0%; }
+.node-icon-art.icon-character { background-position: 33.333% 0%; }
+.node-icon-art.icon-camera { background-position: 66.667% 0%; }
+.node-icon-art.icon-motion { background-position: 100% 0%; }
+.node-icon-art.icon-style { background-position: 0% 100%; }
+.node-icon-art.icon-audio { background-position: 33.333% 100%; }
+.node-icon-art.icon-output { background-position: 66.667% 100%; }
+.node-icon-art.icon-asset { background-position: 100% 100%; }
 .library-copy { min-width: 0; }
 .library-title { font-size: 11px; font-weight: 800; }
 .library-subtitle { margin-top: 2px; color: var(--dim); font-size: 10px; }
