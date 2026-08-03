@@ -1,5 +1,5 @@
 baseline:
-  id: BASELINE-20260803-010
+  id: BASELINE-20260803-011
   status: passed_with_manual_gate
   accepted_features:
     - "Seedance Flow 節點式工作台"
@@ -27,6 +27,7 @@ baseline:
     - "版本歷史可依版次、提示詞、模型、task／request／error 摘要搜尋"
     - "版本歷史可依 queued／running／succeeded／failed 等狀態篩選，顯示結果計數與空結果訊息"
     - "節點畫布可切換懸停預覽，顯示完整欄位內容並支援鍵盤聚焦"
+    - "節點懸停浮窗可直接編輯文字、textarea 與 select，並同步 Inspector、提示詞與本機工作流"
   critical_user_flows:
     - "載入預設工作流並查看提示詞"
     - "新增節點、編輯欄位、提示即時更新"
@@ -35,6 +36,7 @@ baseline:
     - "API 設定不落盤，生成歷史可在本機查看任務狀態"
     - "設定用量護欄、確認付費風險後送出 mock 生成，重新整理後護欄與歷史仍保留"
     - "切換節點懸停預覽、滑入節點查看完整欄位、移出關閉並確認拖曳不受攔截"
+    - "滑入節點後將游標移入互動浮窗，編輯文字／select，確認提示詞、Inspector 與 localStorage 同步"
   protected_behavior:
     - "上層譯匠主站檔案與 .openai/hosting.json 不變"
     - "上層 npm run lint、npm run build、npm test 通過"
@@ -64,3 +66,4 @@ baseline:
     - ".agent/acceptance/CHANGE-008-acceptance.yaml"
     - ".agent/acceptance/CHANGE-009-acceptance.yaml"
     - ".agent/acceptance/CHANGE-010-acceptance.yaml"
+    - ".agent/acceptance/CHANGE-011-acceptance.yaml"

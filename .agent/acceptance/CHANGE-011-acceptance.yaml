@@ -1,0 +1,20 @@
+acceptance:
+  id: CHANGE-011
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 13 JavaScript modules"
+    - "npm test（moviedesign）：35 tests passed"
+    - "agent-browser 本機驗收：Scene 懸停浮窗顯示 3 個可編輯控制項與編輯提示"
+    - "agent-browser textarea 編輯驗收：浮窗 subject 更新後同步 Inspector、節點摘要、Seedance 提示詞與 workflow localStorage"
+    - "agent-browser select 編輯驗收：Camera shot 在浮窗切換為近景情緒特寫，提示詞與 workflow localStorage 同步"
+    - "agent-browser 游標驗收：由節點移入互動浮窗後 220ms 內保持開啟，移至外部後關閉"
+    - "agent-browser Escape／focus 驗收：鍵盤聚焦節點可開啟可編輯浮窗，Escape 可關閉"
+    - "agent-browser 390x844 驗收：文件寬度與 clientWidth 均為 390px，浮窗寬度 340px 且工具列開關可見"
+  manual_notes:
+    - "MANUAL_REQUIRED：真實 Ark 生成、正式 bridge／DNS／TLS 部署與費用／配額仍需正式認證及外部設定"

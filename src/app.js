@@ -76,6 +76,7 @@ let nodePreviewEnabled = loadNodePreviewPreference();
 let hoverPreviewAnchor = null;
 let hoverPreviewNodeId = null;
 let hoverPreviewTimer = 0;
+let hoverPreviewCloseTimer = 0;
 const pollTimers = new Map();
 const pollingGenerations = new Map();
 const submitting = new Set();
@@ -128,12 +129,55 @@ function renderNodePreviewToggle() {
   toggleNodePreviewButton.title = nodePreviewEnabled ? '關閉節點懸停放大預覽' : '開啟節點懸停放大預覽';
 }
 
+function createNodeFieldControl(definition, node, className = '') {
+  let input;
+  if (definition.type === 'textarea') {
+    input = document.createElement('textarea');
+    input.rows = definition.key === 'beats' ? 4 : 2;
+  } else if (definition.type === 'select') {
+    input = document.createElement('select');
+    (definition.options || []).forEach((option) => {
+      const optionEl = document.createElement('option');
+      optionEl.value = option;
+      optionEl.textContent = option;
+      input.append(optionEl);
+    });
+  } else {
+    input = document.createElement('input');
+    input.type = 'text';
+  }
+  input.name = definition.key;
+  input.value = node.values?.[definition.key] || '';
+  input.placeholder = definition.placeholder || '';
+  input.dataset.fieldKey = definition.key;
+  input.dataset.nodeId = node.id;
+  if (className) input.classList.add(className);
+  return input;
+}
+
+function cancelNodeHoverPreviewDismiss() {
+  window.clearTimeout(hoverPreviewCloseTimer);
+  hoverPreviewCloseTimer = 0;
+}
+
+function scheduleNodeHoverPreviewDismiss() {
+  cancelNodeHoverPreviewDismiss();
+  window.clearTimeout(hoverPreviewTimer);
+  hoverPreviewTimer = 0;
+  hoverPreviewCloseTimer = window.setTimeout(() => {
+    hoverPreviewCloseTimer = 0;
+    dismissNodeHoverPreview();
+  }, 220);
+}
+
 function dismissNodeHoverPreview() {
   window.clearTimeout(hoverPreviewTimer);
+  cancelNodeHoverPreviewDismiss();
   hoverPreviewTimer = 0;
   hoverPreviewAnchor = null;
   hoverPreviewNodeId = null;
   nodeHoverPreview.hidden = true;
+  nodeHoverPreview.removeAttribute('data-node-id');
   nodeHoverPreview.replaceChildren();
 }
 
@@ -157,6 +201,8 @@ function positionNodeHoverPreview() {
 
 function renderNodeHoverPreview(node) {
   const meta = metaFor(node);
+  cancelNodeHoverPreviewDismiss();
+  nodeHoverPreview.dataset.nodeId = node.id;
   nodeHoverPreview.replaceChildren();
   const heading = document.createElement('div');
   heading.className = 'node-hover-preview-heading';
@@ -173,17 +219,28 @@ function renderNodeHoverPreview(node) {
   heading.append(icon, copy);
   nodeHoverPreview.append(heading);
 
+  const hint = document.createElement('p');
+  hint.className = 'node-hover-preview-hint';
+  hint.textContent = '直接編輯此視窗，會同步更新 Inspector 與提示詞。';
+  nodeHoverPreview.append(hint);
+
   const fields = document.createElement('div');
   fields.className = 'node-hover-preview-fields';
-  buildNodeHoverPreviewFields(node, fieldsFor(node.type)).forEach((fieldData) => {
+  const definitions = fieldsFor(node.type);
+  buildNodeHoverPreviewFields(node, definitions).forEach((fieldData) => {
+    const definition = definitions.find((item) => item.key === fieldData.key) || fieldData;
     const field = document.createElement('section');
     field.className = 'node-hover-preview-field';
     const label = document.createElement('div');
     label.className = 'node-hover-preview-label';
     label.textContent = fieldData.label;
-    const value = document.createElement('p');
-    value.textContent = fieldData.value;
-    field.append(label, value);
+    const type = document.createElement('span');
+    type.className = 'node-hover-preview-type';
+    type.textContent = fieldData.type.toUpperCase();
+    label.append(type);
+    const input = createNodeFieldControl(definition, node, 'node-hover-preview-control');
+    input.setAttribute('aria-label', `${meta.title} ${fieldData.label}`);
+    field.append(label, input);
     fields.append(field);
   });
   nodeHoverPreview.append(fields);
@@ -191,12 +248,15 @@ function renderNodeHoverPreview(node) {
 
 function refreshNodeHoverPreview(node) {
   if (nodeHoverPreview.hidden || hoverPreviewNodeId !== node.id) return;
-  renderNodeHoverPreview(node);
+  nodeHoverPreview.querySelectorAll('[data-field-key]').forEach((input) => {
+    if (input !== document.activeElement) input.value = node.values?.[input.dataset.fieldKey] || '';
+  });
   positionNodeHoverPreview();
 }
 
 function scheduleNodeHoverPreview(node, anchor) {
   if (!nodePreviewEnabled) return;
+  cancelNodeHoverPreviewDismiss();
   window.clearTimeout(hoverPreviewTimer);
   hoverPreviewAnchor = anchor;
   hoverPreviewNodeId = node.id;
@@ -206,6 +266,28 @@ function scheduleNodeHoverPreview(node, anchor) {
     nodeHoverPreview.hidden = false;
     positionNodeHoverPreview();
   }, 120);
+}
+
+function updateNodeField(node, fieldKey, value, sourceInput) {
+  if (!node || !fieldKey) return;
+  node.values ||= {};
+  node.values[fieldKey] = value;
+  const nodeEl = canvas.querySelector(`[data-node-id="${CSS.escape(node.id)}"]`);
+  if (nodeEl) nodeEl.querySelector('.node-preview').textContent = previewFor(node);
+  inspectorForm.querySelectorAll(`[data-field-key="${CSS.escape(fieldKey)}"]`).forEach((input) => {
+    if (input !== sourceInput && input.dataset.nodeId === node.id) input.value = value;
+  });
+  refreshNodeHoverPreview(node);
+  renderOutput();
+  persist();
+}
+
+function handleNodeFieldChange(event) {
+  const input = event.target.closest('[data-field-key]');
+  if (!input) return;
+  const node = workflow.nodes.find((item) => item.id === input.dataset.nodeId) || selectedNode();
+  if (!node) return;
+  updateNodeField(node, input.dataset.fieldKey, input.value, input);
 }
 
 function toggleNodeHoverPreview() {
@@ -344,9 +426,9 @@ function renderCanvas() {
     article.innerHTML = `<div class="node-head" data-drag-handle="true"><span class="node-icon">${meta.icon}</span><span class="node-head-copy"><span class="node-title">${meta.title}</span><span class="node-subtitle">${meta.subtitle}</span></span><span class="node-menu" aria-hidden="true">⋯</span></div><div class="node-body"><div class="node-preview"></div><div class="node-footer"><span>${fieldsFor(node.type).length} CONTROLS</span><span class="node-port" aria-hidden="true"></span></div></div>`;
     article.querySelector('.node-preview').textContent = previewFor(node);
     article.addEventListener('pointerenter', () => scheduleNodeHoverPreview(node, article));
-    article.addEventListener('pointerleave', dismissNodeHoverPreview);
+    article.addEventListener('pointerleave', scheduleNodeHoverPreviewDismiss);
     article.addEventListener('focusin', () => scheduleNodeHoverPreview(node, article));
-    article.addEventListener('focusout', dismissNodeHoverPreview);
+    article.addEventListener('focusout', scheduleNodeHoverPreviewDismiss);
     canvas.append(article);
   });
   nodeCount.textContent = String(workflow.nodes.length).padStart(2, '0');
@@ -423,26 +505,7 @@ function renderInspector() {
     label.className = 'field-label';
     label.innerHTML = `<span>${definition.label}</span><span class="field-type">${definition.type.toUpperCase()}</span>`;
     field.append(label);
-    let input;
-    if (definition.type === 'textarea') {
-      input = document.createElement('textarea');
-      input.rows = definition.key === 'beats' ? 4 : 2;
-    } else if (definition.type === 'select') {
-      input = document.createElement('select');
-      definition.options.forEach((option) => {
-        const optionEl = document.createElement('option');
-        optionEl.value = option;
-        optionEl.textContent = option;
-        input.append(optionEl);
-      });
-    } else {
-      input = document.createElement('input');
-      input.type = 'text';
-    }
-    input.name = definition.key;
-    input.value = node.values?.[definition.key] || '';
-    input.placeholder = definition.placeholder || '';
-    input.dataset.fieldKey = definition.key;
+    const input = createNodeFieldControl(definition, node);
     field.append(input);
     inspectorForm.append(field);
   });
@@ -934,8 +997,16 @@ function renderTimeline() {
     card.className = 'beat';
     const time = beat.split('：')[0] || ['00-06', '06-14', '14-24', '24-30'][index];
     const copy = beat.includes('：') ? beat.slice(beat.indexOf('：') + 1) : beat;
-    card.innerHTML = `<div class="beat-time">${time}</div><div class="beat-name">${names[index]}</div><div class="beat-copy"></div>`;
-    card.querySelector('.beat-copy').textContent = copy;
+    const timeEl = document.createElement('div');
+    timeEl.className = 'beat-time';
+    timeEl.textContent = time;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'beat-name';
+    nameEl.textContent = names[index];
+    const copyEl = document.createElement('div');
+    copyEl.className = 'beat-copy';
+    copyEl.textContent = copy;
+    card.append(timeEl, nameEl, copyEl);
     timeline.append(card);
   });
 }
@@ -1106,29 +1177,14 @@ canvas.addEventListener('pointerup', (event) => {
   persist();
 });
 
-inspectorForm.addEventListener('input', (event) => {
-  const input = event.target.closest('[data-field-key]');
-  const node = selectedNode();
-  if (!input || !node) return;
-  node.values[input.dataset.fieldKey] = input.value;
-  const nodeEl = canvas.querySelector(`[data-node-id="${CSS.escape(node.id)}"]`);
-  if (nodeEl) nodeEl.querySelector('.node-preview').textContent = previewFor(node);
-  refreshNodeHoverPreview(node);
-  renderOutput();
-  persist();
-});
-
-inspectorForm.addEventListener('change', (event) => {
-  const input = event.target.closest('[data-field-key]');
-  const node = selectedNode();
-  if (!input || !node) return;
-  node.values[input.dataset.fieldKey] = input.value;
-  const nodeEl = canvas.querySelector(`[data-node-id="${CSS.escape(node.id)}"]`);
-  if (nodeEl) nodeEl.querySelector('.node-preview').textContent = previewFor(node);
-  refreshNodeHoverPreview(node);
-  renderOutput();
-  persist();
-});
+inspectorForm.addEventListener('input', handleNodeFieldChange);
+inspectorForm.addEventListener('change', handleNodeFieldChange);
+nodeHoverPreview.addEventListener('input', handleNodeFieldChange);
+nodeHoverPreview.addEventListener('change', handleNodeFieldChange);
+nodeHoverPreview.addEventListener('pointerenter', cancelNodeHoverPreviewDismiss);
+nodeHoverPreview.addEventListener('pointerleave', scheduleNodeHoverPreviewDismiss);
+nodeHoverPreview.addEventListener('focusin', cancelNodeHoverPreviewDismiss);
+nodeHoverPreview.addEventListener('focusout', scheduleNodeHoverPreviewDismiss);
 
 deleteButton.addEventListener('click', deleteSelected);
 $('#copy-prompt').addEventListener('click', copyPrompt);
@@ -1180,6 +1236,7 @@ $('#zoom-out').addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !nodeHoverPreview.hidden) dismissNodeHoverPreview();
   if ((event.key === 'Delete' || event.key === 'Backspace') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) deleteSelected();
 });
 

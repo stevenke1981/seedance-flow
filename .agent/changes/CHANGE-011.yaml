@@ -1,0 +1,17 @@
+change:
+  id: CHANGE-011
+  title: "將節點懸停預覽升級為可編輯浮窗"
+  classification: feature
+  risk: LOW
+  scope: "懸停預覽互動欄位、節點值同步與可持續的節點／浮窗游標互動"
+  impact:
+    modules:
+      - "src/app.js / index.html / styles.css"
+      - "README.md / SPEC.md / .agent/current-plan.yaml"
+    protected_flows:
+      - "Inspector 文字、textarea、select 編輯與提示詞即時更新"
+      - "節點選取、拖曳、鍵盤聚焦、懸停開關與 390px responsive layout"
+      - "workflow/history schema、API Key 邊界與 Ark 生成流程"
+    public_contract: "浮窗編輯沿用既有 workflow node values 與 localStorage；不新增外部 API、資料 migration 或憑證落盤"
+  rollback: "回復 CHANGE-011 相關檔案即可；不涉及外部 API、資料 migration 或正式資料"
+  external_gate: "正式 Ark 生成與 DNS/TLS 仍依既有 MANUAL_REQUIRED 邊界"

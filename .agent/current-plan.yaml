@@ -66,3 +66,8 @@ plan:
       output: "工具列開關、滑鼠／鍵盤懸停浮窗、完整節點欄位內容與本機偏好"
       verify: "node-hover-preview tests、lint/build/release、瀏覽器滑入／Tab／拖曳與手機版驗收"
       status: completed
+    - id: T14
+      task: "將節點懸停放大預覽升級為可編輯浮窗"
+      output: "浮窗內文字／textarea／select 編輯、節點與 Inspector／提示詞同步、跨節點移入保持開啟"
+      verify: "lint/build/test/release、瀏覽器浮窗編輯同步、select 編輯、滑入浮窗與 390px 驗收"
+      status: completed
