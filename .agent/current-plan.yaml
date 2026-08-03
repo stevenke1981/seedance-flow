@@ -61,3 +61,8 @@ plan:
       output: "本機版次搜尋框、狀態篩選、空結果提示與純函式測試"
       verify: "history-filter tests、lint/build、瀏覽器搜尋與 status select 操作"
       status: completed
+    - id: T13
+      task: "加入可切換的節點懸停放大預覽"
+      output: "工具列開關、滑鼠／鍵盤懸停浮窗、完整節點欄位內容與本機偏好"
+      verify: "node-hover-preview tests、lint/build/release、瀏覽器滑入／Tab／拖曳與手機版驗收"
+      status: completed

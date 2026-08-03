@@ -1,0 +1,23 @@
+acceptance:
+  id: CHANGE-010
+  status: passed_with_manual_gate
+  build_or_launch: PASS
+  requested_user_scenario: PASS_LOCAL_ONLY
+  affected_regression: PASS
+  critical_flows: PASS_LOCAL_ONLY
+  visible_result: PASS
+  critical_errors: NONE
+  evidence:
+    - "npm run lint（moviedesign）：Linted 13 JavaScript modules"
+    - "npm test（moviedesign）：35 tests passed"
+    - "npm run build（moviedesign）：dist 建立成功"
+    - "npm run release:check：輸出 READY，10 個核心產物含 bytes 與 SHA-256"
+    - "npm run release:check:strict：以 HTTPS upstream、HTTPS origin、0.0.0.0、requireOrigin=true 與 rate limit 設定輸出 READY，exit 0"
+    - "agent-browser 桌面驗收：滑入 Scene 節點顯示 Scene、3 個完整欄位與節點內容；移出後浮窗隱藏"
+    - "agent-browser 鍵盤驗收：Tab／focus Scene 節點顯示相同放大預覽，焦點移到工具列後關閉"
+    - "agent-browser 開關驗收：關閉後 aria-pressed=false、localStorage 保存 false，重新整理仍為關閉；重新開啟後恢復預覽"
+    - "agent-browser 拖曳驗收：Scene 節點由 left=270/top=196 移動至 left=300/top=216，浮窗未攔截 pointerdown"
+    - "agent-browser 390x844 驗收：文件寬度與 clientWidth 均為 390px，工具列開關可見且不換行"
+    - "上層 E:\\hanzi-translate lint、build、test gates 維持通過（前一基線已驗證）"
+  manual_notes:
+    - "MANUAL_REQUIRED：真實 Ark 生成、正式 bridge／DNS／TLS 部署與費用／配額仍需正式認證及外部設定"

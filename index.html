@@ -46,7 +46,7 @@
         <main class="workspace-column">
           <div class="workspace-toolbar">
             <div class="toolbar-title"><span class="live-pulse"></span><span>SHOT GRAPH</span><span class="toolbar-divider"></span><span class="toolbar-subtitle">30 SEC / 4 BEATS</span></div>
-            <div class="toolbar-actions"><button id="zoom-out" class="icon-button" type="button" aria-label="縮小畫布">−</button><span id="zoom-level">100%</span><button id="zoom-in" class="icon-button" type="button" aria-label="放大畫布">＋</button></div>
+            <div class="toolbar-actions"><button id="toggle-node-preview" class="toolbar-toggle" type="button" aria-pressed="true" aria-controls="node-hover-preview">懸停預覽 開</button><button id="zoom-out" class="icon-button" type="button" aria-label="縮小畫布">−</button><span id="zoom-level">100%</span><button id="zoom-in" class="icon-button" type="button" aria-label="放大畫布">＋</button></div>
           </div>
           <section id="canvas-viewport" class="canvas-viewport" aria-label="節點畫布">
             <div id="canvas" class="node-canvas">
@@ -88,6 +88,7 @@
         </aside>
       </div>
     </div>
+    <aside id="node-hover-preview" class="node-hover-preview" role="tooltip" aria-label="節點放大預覽" hidden></aside>
     <div id="api-modal" class="modal-backdrop" hidden>
       <section class="api-modal" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
         <div class="prompt-heading"><div><p class="eyebrow">LOCAL PROVIDER BRIDGE</p><h2 id="api-modal-title">Ark API 設定</h2></div><button id="close-api-panel" class="icon-button" type="button" aria-label="關閉 API 設定">×</button></div>

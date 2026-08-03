@@ -14,6 +14,7 @@ export const REQUIRED_RELEASE_FILES = Object.freeze([
   'dist/src/bridge-policy.mjs',
   'dist/src/history-archive.mjs',
   'dist/src/history-filter.mjs',
+  'dist/src/node-hover-preview.mjs',
 ]);
 
 async function artifactInfo(root, relativePath) {

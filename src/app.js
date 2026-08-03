@@ -24,6 +24,11 @@ import {
   serializeHistoryArchive,
 } from './history-archive.mjs';
 import { filterHistory } from './history-filter.mjs';
+import {
+  NODE_HOVER_PREVIEW_STORAGE_KEY,
+  buildNodeHoverPreviewFields,
+  normalizeNodeHoverPreviewPreference,
+} from './node-hover-preview.mjs';
 
 const HISTORY_KEY = 'seedance-flow-history-v1';
 const STATUS_LABELS = { queued: '排隊中', running: '生成中', cancelling: '取消中', succeeded: '已完成', failed: '失敗', expired: '已過期', cancelled: '已取消' };
@@ -55,6 +60,8 @@ const policyConfirmationInput = $('#policy-confirmation');
 const versionHistory = $('#version-history');
 const historyCount = $('#history-count');
 const generateButton = $('#generate-video');
+const nodeHoverPreview = $('#node-hover-preview');
+const toggleNodePreviewButton = $('#toggle-node-preview');
 
 let workflow = loadWorkflow();
 let selectedId = workflow.nodes[0]?.id || null;
@@ -65,6 +72,10 @@ let apiConfig = { apiKey: '', model: '' };
 let generationPolicy = loadGenerationPolicy();
 let history = loadHistory();
 let historyFilter = { query: '', status: 'all' };
+let nodePreviewEnabled = loadNodePreviewPreference();
+let hoverPreviewAnchor = null;
+let hoverPreviewNodeId = null;
+let hoverPreviewTimer = 0;
 const pollTimers = new Map();
 const pollingGenerations = new Map();
 const submitting = new Set();
@@ -97,6 +108,111 @@ function loadGenerationPolicy() {
   } catch {
     return normalizeGenerationPolicy(DEFAULT_GENERATION_POLICY);
   }
+}
+
+function loadNodePreviewPreference() {
+  try {
+    return normalizeNodeHoverPreviewPreference(localStorage.getItem(NODE_HOVER_PREVIEW_STORAGE_KEY));
+  } catch {
+    return true;
+  }
+}
+
+function persistNodePreviewPreference() {
+  try { localStorage.setItem(NODE_HOVER_PREVIEW_STORAGE_KEY, String(nodePreviewEnabled)); } catch { /* local preference is optional */ }
+}
+
+function renderNodePreviewToggle() {
+  toggleNodePreviewButton.setAttribute('aria-pressed', String(nodePreviewEnabled));
+  toggleNodePreviewButton.textContent = `懸停預覽 ${nodePreviewEnabled ? '開' : '關'}`;
+  toggleNodePreviewButton.title = nodePreviewEnabled ? '關閉節點懸停放大預覽' : '開啟節點懸停放大預覽';
+}
+
+function dismissNodeHoverPreview() {
+  window.clearTimeout(hoverPreviewTimer);
+  hoverPreviewTimer = 0;
+  hoverPreviewAnchor = null;
+  hoverPreviewNodeId = null;
+  nodeHoverPreview.hidden = true;
+  nodeHoverPreview.replaceChildren();
+}
+
+function positionNodeHoverPreview() {
+  if (nodeHoverPreview.hidden || !hoverPreviewAnchor) return;
+  const anchorRect = hoverPreviewAnchor.getBoundingClientRect();
+  const previewRect = nodeHoverPreview.getBoundingClientRect();
+  const padding = 12;
+  const gap = 12;
+  const maxLeft = Math.max(padding, window.innerWidth - previewRect.width - padding);
+  const maxTop = Math.max(padding, window.innerHeight - previewRect.height - padding);
+  const preferredLeft = anchorRect.right + gap;
+  const fallbackLeft = anchorRect.left - previewRect.width - gap;
+  const left = preferredLeft + previewRect.width <= window.innerWidth - padding
+    ? preferredLeft
+    : fallbackLeft;
+  const top = Math.min(Math.max(anchorRect.top, padding), maxTop);
+  nodeHoverPreview.style.left = `${Math.round(Math.min(Math.max(left, padding), maxLeft))}px`;
+  nodeHoverPreview.style.top = `${Math.round(top)}px`;
+}
+
+function renderNodeHoverPreview(node) {
+  const meta = metaFor(node);
+  nodeHoverPreview.replaceChildren();
+  const heading = document.createElement('div');
+  heading.className = 'node-hover-preview-heading';
+  const icon = document.createElement('span');
+  icon.className = `node-icon accent-${meta.accent}`;
+  icon.textContent = meta.icon;
+  const copy = document.createElement('div');
+  copy.className = 'node-hover-preview-heading-copy';
+  const title = document.createElement('strong');
+  title.textContent = meta.title;
+  const subtitle = document.createElement('span');
+  subtitle.textContent = meta.subtitle;
+  copy.append(title, subtitle);
+  heading.append(icon, copy);
+  nodeHoverPreview.append(heading);
+
+  const fields = document.createElement('div');
+  fields.className = 'node-hover-preview-fields';
+  buildNodeHoverPreviewFields(node, fieldsFor(node.type)).forEach((fieldData) => {
+    const field = document.createElement('section');
+    field.className = 'node-hover-preview-field';
+    const label = document.createElement('div');
+    label.className = 'node-hover-preview-label';
+    label.textContent = fieldData.label;
+    const value = document.createElement('p');
+    value.textContent = fieldData.value;
+    field.append(label, value);
+    fields.append(field);
+  });
+  nodeHoverPreview.append(fields);
+}
+
+function refreshNodeHoverPreview(node) {
+  if (nodeHoverPreview.hidden || hoverPreviewNodeId !== node.id) return;
+  renderNodeHoverPreview(node);
+  positionNodeHoverPreview();
+}
+
+function scheduleNodeHoverPreview(node, anchor) {
+  if (!nodePreviewEnabled) return;
+  window.clearTimeout(hoverPreviewTimer);
+  hoverPreviewAnchor = anchor;
+  hoverPreviewNodeId = node.id;
+  hoverPreviewTimer = window.setTimeout(() => {
+    if (!nodePreviewEnabled || hoverPreviewAnchor !== anchor || !anchor.isConnected) return;
+    renderNodeHoverPreview(node);
+    nodeHoverPreview.hidden = false;
+    positionNodeHoverPreview();
+  }, 120);
+}
+
+function toggleNodeHoverPreview() {
+  nodePreviewEnabled = !nodePreviewEnabled;
+  persistNodePreviewPreference();
+  renderNodePreviewToggle();
+  if (!nodePreviewEnabled) dismissNodeHoverPreview();
 }
 
 function persistGenerationPolicy() {
@@ -214,6 +330,7 @@ function renderLibrary() {
 }
 
 function renderCanvas() {
+  dismissNodeHoverPreview();
   canvas.querySelectorAll('.flow-node').forEach((node) => node.remove());
   workflow.nodes.forEach((node) => {
     const meta = metaFor(node);
@@ -223,8 +340,13 @@ function renderCanvas() {
     article.style.left = `${Math.round(node.x)}px`;
     article.style.top = `${Math.round(node.y)}px`;
     article.setAttribute('aria-label', `${meta.title} 節點`);
+    article.tabIndex = 0;
     article.innerHTML = `<div class="node-head" data-drag-handle="true"><span class="node-icon">${meta.icon}</span><span class="node-head-copy"><span class="node-title">${meta.title}</span><span class="node-subtitle">${meta.subtitle}</span></span><span class="node-menu" aria-hidden="true">⋯</span></div><div class="node-body"><div class="node-preview"></div><div class="node-footer"><span>${fieldsFor(node.type).length} CONTROLS</span><span class="node-port" aria-hidden="true"></span></div></div>`;
     article.querySelector('.node-preview').textContent = previewFor(node);
+    article.addEventListener('pointerenter', () => scheduleNodeHoverPreview(node, article));
+    article.addEventListener('pointerleave', dismissNodeHoverPreview);
+    article.addEventListener('focusin', () => scheduleNodeHoverPreview(node, article));
+    article.addEventListener('focusout', dismissNodeHoverPreview);
     canvas.append(article);
   });
   nodeCount.textContent = String(workflow.nodes.length).padStart(2, '0');
@@ -954,6 +1076,7 @@ canvas.addEventListener('click', (event) => {
 });
 
 canvas.addEventListener('pointerdown', (event) => {
+  dismissNodeHoverPreview();
   const handle = event.target.closest('[data-drag-handle]');
   const nodeEl = event.target.closest('[data-node-id]');
   if (!handle || !nodeEl) return;
@@ -990,6 +1113,7 @@ inspectorForm.addEventListener('input', (event) => {
   node.values[input.dataset.fieldKey] = input.value;
   const nodeEl = canvas.querySelector(`[data-node-id="${CSS.escape(node.id)}"]`);
   if (nodeEl) nodeEl.querySelector('.node-preview').textContent = previewFor(node);
+  refreshNodeHoverPreview(node);
   renderOutput();
   persist();
 });
@@ -1001,6 +1125,7 @@ inspectorForm.addEventListener('change', (event) => {
   node.values[input.dataset.fieldKey] = input.value;
   const nodeEl = canvas.querySelector(`[data-node-id="${CSS.escape(node.id)}"]`);
   if (nodeEl) nodeEl.querySelector('.node-preview').textContent = previewFor(node);
+  refreshNodeHoverPreview(node);
   renderOutput();
   persist();
 });
@@ -1020,6 +1145,7 @@ $('#history-status-filter').addEventListener('change', (event) => {
   historyFilter.status = event.target.value;
   renderHistory();
 });
+toggleNodePreviewButton.addEventListener('click', toggleNodeHoverPreview);
 $('#reset-workflow').addEventListener('click', resetWorkflow);
 $('#generate-video').addEventListener('click', generateVideo);
 versionHistory.addEventListener('click', (event) => {
@@ -1057,7 +1183,9 @@ document.addEventListener('keydown', (event) => {
   if ((event.key === 'Delete' || event.key === 'Backspace') && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) deleteSelected();
 });
 
-window.addEventListener('resize', renderEdges);
-viewport.addEventListener('scroll', renderEdges);
+window.addEventListener('resize', () => { renderEdges(); positionNodeHoverPreview(); });
+window.addEventListener('scroll', positionNodeHoverPreview, { passive: true });
+viewport.addEventListener('scroll', () => { renderEdges(); positionNodeHoverPreview(); });
 
+renderNodePreviewToggle();
 renderAll();

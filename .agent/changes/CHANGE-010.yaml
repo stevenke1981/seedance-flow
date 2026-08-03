@@ -1,0 +1,18 @@
+change:
+  id: CHANGE-010
+  title: "加入可切換的節點懸停放大預覽"
+  classification: feature
+  risk: LOW
+  scope: "節點畫布懸停／鍵盤聚焦預覽浮窗、工具列開關與本機偏好"
+  impact:
+    modules:
+      - "src/node-hover-preview.mjs / test/node-hover-preview.test.mjs"
+      - "src/app.js / index.html / styles.css"
+      - "scripts/lint.mjs / scripts/release-check.mjs / README.md / SPEC.md"
+    protected_flows:
+      - "節點拖曳、選取、鍵盤焦點與 Inspector 欄位編輯"
+      - "畫布 zoom、edge rendering 與 mobile responsive layout"
+      - "API Key、workflow/history schema 與外部生成流程"
+    public_contract: "懸停預覽只讀取目前 workflow 節點資料；開關偏好使用獨立 localStorage key，不改變工作流 schema"
+  rollback: "回復 CHANGE-010 相關檔案即可；不涉及外部 API、資料 migration 或正式資料"
+  external_gate: "正式 Ark 生成、bridge 部署、DNS/TLS 與費用／配額仍不在本階段"
